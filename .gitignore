@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Secrets / env
+.env
+secrets.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Obsidian workspace state (personal, not shared)
+vault/.obsidian/workspace.json
+vault/.obsidian/workspace-mobile.json
+
+# Large test outputs
+*.json.bak

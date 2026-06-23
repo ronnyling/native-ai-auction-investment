@@ -1,0 +1,62 @@
+name: Daily Property Scrape
+
+on:
+  schedule:
+    # 00:00 UTC = 08:00 MYT (UTC+8)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      states:
+        description: 'Comma-separated states to scrape (blank = all)'
+        required: false
+        default: ''
+      max_pages:
+        description: 'Max pages per state (blank = unlimited)'
+        required: false
+        default: ''
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to push vault changes
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so we can push without conflicts
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scraper/requirements.txt
+
+      - name: Run scraper pipeline
+        working-directory: scraper
+        env:
+          VAULT_PATH: ${{ github.workspace }}/vault/Properties
+          DAILY_NOTES_PATH: ${{ github.workspace }}/vault/Daily Notes
+          TEMPLATES_PATH: ${{ github.workspace }}/vault/_templates
+          GEOCACHE_PATH: ${{ github.workspace }}/scraper/geocache.json
+          KNOWN_IDS_PATH: ${{ github.workspace }}/scraper/known_ids.json
+          SCRAPE_STATES: ${{ github.event.inputs.states }}
+          MAX_PAGES: ${{ github.event.inputs.max_pages }}
+        run: python main.py
+
+      - name: Commit updated vault
+        run: |
+          git config user.name "auction-bot"
+          git config user.email "auction-bot@users.noreply.github.com"
+          git add vault/Properties/ "vault/Daily Notes/" scraper/known_ids.json scraper/geocache.json
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          CHANGED=$(git diff --staged --name-only | wc -l)
+          git commit -m "scrape: $(date +'%Y-%m-%d') — ${CHANGED} files updated"
+          git push
