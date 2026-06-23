@@ -24,86 +24,191 @@
     {
       "name": "All Malaysia",
       "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
+      "mapCenter": {
+        "lat": 3.9,
+        "lng": 109
+      },
       "query": "path:\"Properties\"",
-      "autoFit": true
-    },
-    {
-      "name": "📍 Puchong",
-      "mapZoom": 13,
-      "mapCenter": { "lat": 3.03, "lng": 101.62 },
-      "query": "path:\"Properties\" tag:puchong",
-      "autoFit": false
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
       "name": "Selangor",
       "mapZoom": 10,
-      "mapCenter": { "lat": 3.15, "lng": 101.6 },
-      "query": "path:\"Properties\" tag:selangor",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.15,
+        "lng": 101.6
+      },
+      "query": "path:\"Properties\" [state:Selangor]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
       "name": "Kuala Lumpur",
       "mapZoom": 11,
-      "mapCenter": { "lat": 3.15, "lng": 101.7 },
-      "query": "path:\"Properties\" tag:kuala-lumpur",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.15,
+        "lng": 101.7
+      },
+      "query": "path:\"Properties\" [state:Kuala Lumpur]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
       "name": "Penang",
       "mapZoom": 11,
-      "mapCenter": { "lat": 5.41, "lng": 100.33 },
-      "query": "path:\"Properties\" tag:penang",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 5.41,
+        "lng": 100.33
+      },
+      "query": "path:\"Properties\" [state:Penang]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
       "name": "Johor",
       "mapZoom": 10,
-      "mapCenter": { "lat": 1.86, "lng": 103.6 },
-      "query": "path:\"Properties\" tag:johor",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 1.86,
+        "lng": 103.6
+      },
+      "query": "path:\"Properties\" [state:Johor]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
-      "name": "Apartments",
+      "name": "New Listings",
       "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" tag:apartment",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.9,
+        "lng": 109
+      },
+      "query": "path:\"Properties\" [status:new]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
-      "name": "Terrace / Link",
+      "name": "Shortlisted",
       "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" tag:terrace",
-      "autoFit": true
-    },
-    {
-      "name": "LACA Only",
-      "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" tag:laca -tag:non-laca",
-      "autoFit": true
-    },
-    {
-      "name": "Re-auctions",
-      "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" tag:reauction",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.9,
+        "lng": 109
+      },
+      "query": "path:\"Properties\" [status:shortlisted]",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
       "name": "High BMV (>30%)",
       "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" tag:high-bmv",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.9,
+        "lng": 109
+      },
+      "query": "path:\"Properties\" bmv_pct>30",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     },
     {
-      "name": "🌟 Shortlisted",
+      "name": "This Week",
       "mapZoom": 7,
-      "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" [status:shortlisted]",
-      "autoFit": true
+      "mapCenter": {
+        "lat": 3.9,
+        "lng": 109
+      },
+      "query": "path:\"Properties\" days_to_auction<=7",
+      "queryError": false,
+      "chosenMapSource": 0,
+      "forceHistorySave": false,
+      "followActiveNote": false,
+      "followMyLocation": false,
+      "embeddedHeight": 300,
+      "autoFit": true,
+      "lock": false,
+      "showLinks": false,
+      "linkColor": "red",
+      "markerLabels": "off",
+      "editMode": false
     }
   ],
   "displayRules": [
@@ -120,33 +225,54 @@
     {
       "query": "[status:bid]",
       "preset": false,
-      "iconDetails": { "prefix": "fas", "icon": "fa-gavel", "markerColor": "red" }
+      "iconDetails": {
+        "prefix": "fas",
+        "icon": "fa-gavel",
+        "markerColor": "red"
+      }
     },
     {
       "query": "[status:visiting]",
       "preset": false,
-      "iconDetails": { "prefix": "fas", "icon": "fa-car", "markerColor": "orange" }
+      "iconDetails": {
+        "prefix": "fas",
+        "icon": "fa-car",
+        "markerColor": "orange"
+      }
     },
     {
       "query": "[status:shortlisted]",
       "preset": false,
-      "iconDetails": { "prefix": "fas", "icon": "fa-star", "markerColor": "gold" }
+      "iconDetails": {
+        "prefix": "fas",
+        "icon": "fa-star",
+        "markerColor": "gold"
+      }
     },
     {
       "query": "[status:passed]",
       "preset": false,
-      "iconDetails": { "prefix": "fas", "icon": "fa-times-circle", "markerColor": "gray", "opacity": 0.4 }
+      "iconDetails": {
+        "prefix": "fas",
+        "icon": "fa-times-circle",
+        "markerColor": "gray",
+        "opacity": 0.4
+      }
     },
     {
       "query": "[status:reviewing]",
       "preset": false,
-      "iconDetails": { "prefix": "fas", "icon": "fa-search", "markerColor": "purple" }
+      "iconDetails": {
+        "prefix": "fas",
+        "icon": "fa-search",
+        "markerColor": "purple"
+      }
     }
   ],
   "zoomOnGoFromNote": 15,
   "autoZoom": true,
   "onlyOneExpanded": true,
-  "markerClickBehavior": "dedicatedPane",
+  "markerClickBehavior": "replaceCurrent",
   "markerCtrlClickBehavior": "dedicatedPane",
   "markerMiddleClickBehavior": "dedicatedTab",
   "openMapBehavior": "replaceCurrent",
@@ -158,7 +284,7 @@
   "newNoteTemplate": "",
   "showNoteNamePopup": true,
   "showLinkNameInPopup": "always",
-  "showNativeObsidianHoverPopup": false,
+  "showNativeObsidianHoverPopup": true,
   "showNotePreview": true,
   "showClusterPreview": true,
   "debug": false,
@@ -189,11 +315,11 @@
     }
   ],
   "mapControlsSections": {
-    "filtersDisplayed": true,
+    "filtersDisplayed": false,
     "viewDisplayed": false,
     "linksDisplayed": false,
     "presetsDisplayed": false,
-    "editDisplayed": false
+    "editDisplayed": true
   },
   "mapControlsMinimized": false,
   "maxClusterRadiusPixels": 25,

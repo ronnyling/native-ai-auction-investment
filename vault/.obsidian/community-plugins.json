@@ -1,7 +1,7 @@
 [
-  "dataview",
   "obsidian-git",
   "obsidian-map-view",
   "metadata-menu",
-  "templater-obsidian"
+  "templater-obsidian",
+  "dataview"
 ]
