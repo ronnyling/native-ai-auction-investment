@@ -197,11 +197,26 @@ class LelongTipsScraper:
             # Extract visible text from the card element
             card_text = link.get_text(separator=" ", strip=True)
 
-            # --- Address: full text of the address <h5>/<address> inside card ---
+            # --- Address: try CSS class selectors first, fall back to heuristic ---
             address = ""
-            addr_tag = link.find(["h5", "address", "p"])
-            if addr_tag:
-                address = addr_tag.get_text(strip=True)
+            # LLT uses various class names for address text
+            for sel in ["p.location", "span.location", ".property-address",
+                        ".address", "h5", "address"]:
+                addr_tag = link.select_one(sel)
+                if addr_tag:
+                    address = addr_tag.get_text(strip=True)
+                    break
+            # Fallback: first line that looks like a Malaysian address
+            # (contains a number and a comma, or contains "Jalan"/"Taman"/"No.")
+            if not address:
+                for line in card_text.split("  "):
+                    line = line.strip()
+                    if line and re.search(
+                        r"(Jalan|Taman|Lorong|No\.|Jln|Tmn|Blok|Block|Lot|Apartment|Condominium|,\s*\d{5})",
+                        line, re.IGNORECASE
+                    ):
+                        address = line
+                        break
 
             # --- Price: look for RM pattern ---
             price = 0.0

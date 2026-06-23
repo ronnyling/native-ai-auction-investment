@@ -83,17 +83,21 @@ class MDWriter:
         note_path.write_text(updated, encoding="utf-8")
         return note_path
 
-    def build_vault_index(self) -> Dict[str, Dict]:
+    def build_vault_index_and_ids(self) -> tuple:
         """
-        Scan all existing Property notes and return a lookup dict:
-            key: "{postcode}:{normalised_street}"
-            value: dict of frontmatter fields
+        Single-pass scan of all Property notes.
+        Returns (index, known_ids) where:
+          index      = dict keyed by "{postcode}:{normalised_street}" → frontmatter dict
+          known_ids  = set of BidNow listing ID strings
         """
         index: Dict[str, Dict] = {}
+        known_ids: set = set()
         for md_file in self.props_dir.glob("bn-*.md"):
             fm = self._read_frontmatter(md_file)
             if not fm:
                 continue
+            if fm.get("bidnow_id"):
+                known_ids.add(str(fm["bidnow_id"]))
             address = fm.get("address", "")
             postcode = str(fm.get("postcode", ""))
             street = _normalise_street(address)
@@ -101,15 +105,16 @@ class MDWriter:
                 key = f"{postcode}:{street}"
                 index[key] = fm
         print(f"  [vault] index built: {len(index)} existing notes")
+        return index, known_ids
+
+    def build_vault_index(self) -> Dict[str, Dict]:
+        """Compatibility wrapper — use build_vault_index_and_ids() for efficiency."""
+        index, _ = self.build_vault_index_and_ids()
         return index
 
     def build_known_ids(self) -> set:
-        """Return set of all BidNow listing IDs already in the vault."""
-        ids = set()
-        for md_file in self.props_dir.glob("bn-*.md"):
-            fm = self._read_frontmatter(md_file)
-            if fm and fm.get("bidnow_id"):
-                ids.add(str(fm["bidnow_id"]))
+        """Compatibility wrapper — use build_vault_index_and_ids() for efficiency."""
+        _, ids = self.build_vault_index_and_ids()
         return ids
 
     # ── Rendering ─────────────────────────────────────────────────────────────
@@ -152,7 +157,7 @@ class MDWriter:
             # Address
             "address": listing.get("full_address", ""),
             "postcode": postcode,
-            "city": listing.get("district", ""),
+            "city": _clean_city(listing.get("district", "")),
             "state": listing.get("state", ""),
             "region": listing.get("region", ""),
             "location": location,
@@ -307,6 +312,11 @@ SORT auction_date ASC
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
+
+def _clean_city(district: str) -> str:
+    """Strip leading 5-digit postcode from district string e.g. '11700 Gelugor' → 'Gelugor'."""
+    return re.sub(r"^\d{5}\s*", "", district).strip()
+
 
 def _normalise_street(address: str) -> str:
     s = address.lower()

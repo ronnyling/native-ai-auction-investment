@@ -104,8 +104,7 @@ def run():
     # ── Stage 1: Load vault index ─────────────────────────────────────────────
     print("\n[Stage 1] Loading vault index...")
     writer = MDWriter(VAULT_PATH)
-    vault_index = writer.build_vault_index()
-    vault_known_ids = writer.build_known_ids()
+    vault_index, vault_known_ids = writer.build_vault_index_and_ids()  # single pass
     scraper_known_ids = load_known_ids()
     known_ids = vault_known_ids | scraper_known_ids
     print(f"  {len(known_ids)} known BidNow IDs")
