@@ -1,12 +1,14 @@
 # 🏠 Auction Property Search
 
-> Search and filter all scraped listings. Click any column header to sort. Click a row to open the property note. For map view, open **Map View** and use the **Presets** panel.
-
 ```dataviewjs
 // ── Auction Property Filter Dashboard ────────────────────────────────────────
 // Requires: Dataview plugin enabled
 
 const con = this.container;
+
+// Description (inside JS so code block is right at the top = renders immediately)
+const desc = con.createEl("p", { attr:{ style:"color:var(--text-muted);font-size:13px;margin-bottom:10px;" } });
+desc.innerHTML = "Search and filter all scraped listings. Click column headers to sort. <strong>Drag column edges</strong> to resize columns. Drag the <strong>bottom-right corner</strong> of the results area to resize height. Click a row to open the property note.";
 
 // ── Filter state ──────────────────────────────────────────────────────────────
 let sortCol = "date", sortDir = "asc";
@@ -49,10 +51,7 @@ con.createEl("style").textContent = `
     text-align:left; position:relative; white-space:nowrap;
     display:block; width:100%;
   }
-  .af-ms-btn::after {
-    content:"▾"; position:absolute; right:7px; top:50%;
-    transform:translateY(-50%); color:var(--text-muted); pointer-events:none;
-  }
+  .af-ms-btn::after { content:"▾"; position:absolute; right:7px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none; }
   .af-ms-panel {
     display:none; position:absolute; z-index:9999; top:calc(100% + 4px); left:0;
     min-width:180px; max-height:240px; overflow-y:auto;
@@ -61,32 +60,43 @@ con.createEl("style").textContent = `
     border-radius:6px; padding:4px 0; box-shadow:0 4px 20px rgba(0,0,0,.5);
   }
   .af-ms-panel.open { display:block; }
-  .af-ms-ctrl {
-    display:flex; gap:8px; padding:5px 10px 6px;
-    border-bottom:1px solid var(--background-modifier-border); margin-bottom:3px;
-  }
+  .af-ms-ctrl { display:flex; gap:8px; padding:5px 10px 6px; border-bottom:1px solid var(--background-modifier-border); margin-bottom:3px; }
   .af-ms-lnk { cursor:pointer; color:var(--link-color); font-size:11px; }
   .af-ms-lnk:hover { text-decoration:underline; }
   .af-ms-row { display:flex; gap:8px; align-items:center; padding:4px 10px; cursor:pointer; }
   .af-ms-row:hover { background:var(--background-secondary); }
   .af-ms-row label { cursor:pointer; font-size:13px; user-select:none; flex:1; }
   .af-ms-row input[type=checkbox] { cursor:pointer; margin:0; flex-shrink:0; }
+  /* ── resizable scroll container ── */
+  .af-count { font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+  .af-scroll {
+    resize:vertical; overflow:auto;
+    min-height:320px; max-height:80vh;
+    border:1px solid var(--background-modifier-border); border-radius:6px;
+  }
   /* ── table ── */
-  .af-count { font-size:12px; color:var(--text-muted); margin-bottom:8px; }
-  .af-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+  .af-tbl { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
   .af-tbl th {
     text-align:left; padding:7px 10px; white-space:nowrap;
-    cursor:pointer; user-select:none;
+    cursor:pointer; user-select:none; position:relative;
     border-bottom:2px solid var(--background-modifier-border); color:var(--text-muted);
+    overflow:hidden;
   }
   .af-tbl th:hover { color:var(--text-normal); background:var(--background-secondary); }
   .af-tbl th.sort-asc::after  { content:" ▲"; font-size:10px; }
   .af-tbl th.sort-desc::after { content:" ▼"; font-size:10px; }
   .af-tbl td {
     padding:6px 10px; border-bottom:1px solid var(--background-modifier-border);
-    vertical-align:middle;
+    vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   .af-tbl tr:hover td { background:var(--background-secondary); }
+  /* ── column resize handle ── */
+  .col-rz {
+    position:absolute; right:0; top:0; height:100%; width:5px;
+    cursor:col-resize; user-select:none; z-index:2;
+  }
+  .col-rz:hover, .col-rz.dragging { background:var(--interactive-accent); opacity:.6; }
+  /* ── badges ── */
   .af-badge { display:inline-block; padding:1px 7px; border-radius:3px; font-size:11px; font-weight:600; }
   .s-new         { background:#1e3a5f; color:#7eb8f7; }
   .s-reviewing   { background:#2d1e4f; color:#c0a0ff; }
@@ -226,19 +236,20 @@ iMinBmv.addEventListener ("input",  () => { fMinBmv = parseFloat(iMinBmv.value) 
 
 // ── Results area ──────────────────────────────────────────────────────────────
 const countDiv  = con.createDiv({ cls: "af-count" });
-const tableWrap = con.createDiv();
+const scrollWrap = con.createDiv({ cls: "af-scroll" });
+const tableWrap  = scrollWrap;  // table renders directly inside scroll container
 
-// Column definitions: key, header label, default sort direction
+// Column definitions: key, header label, default sort dir, initial width (px)
 const COLS = [
-  { key:"address",  label:"Address / Property", def:"asc"  },
-  { key:"price",    label:"Reserve Price",       def:"asc"  },
-  { key:"bmv",      label:"BMV%",                def:"desc" },
-  { key:"type",     label:"Type",                def:"asc"  },
-  { key:"location", label:"State · City",        def:"asc"  },
-  { key:"date",     label:"Auction Date",        def:"asc"  },
-  { key:"days",     label:"Days Left",           def:"asc"  },
-  { key:"rnd",      label:"Rnd",                 def:"desc" },
-  { key:"status",   label:"Status",              def:"asc"  },
+  { key:"address",  label:"Address / Property", def:"asc",  w:280 },
+  { key:"price",    label:"Reserve Price",       def:"asc",  w:130 },
+  { key:"bmv",      label:"BMV%",                def:"desc", w:70  },
+  { key:"type",     label:"Type",                def:"asc",  w:110 },
+  { key:"location", label:"State · City",        def:"asc",  w:160 },
+  { key:"date",     label:"Auction Date",        def:"asc",  w:115 },
+  { key:"days",     label:"Days Left",           def:"asc",  w:85  },
+  { key:"rnd",      label:"Rnd",                 def:"desc", w:50  },
+  { key:"status",   label:"Status",              def:"asc",  w:105 },
 ];
 
 function sortKey(p) {
@@ -254,6 +265,29 @@ function sortKey(p) {
     case "status":   return p.status || "";
     default:         return "";
   }
+}
+
+// Add drag-resize handles to every <th>
+function addColResizers(table) {
+  table.querySelectorAll("th").forEach(th => {
+    const rz = document.createElement("div");
+    rz.className = "col-rz";
+    th.appendChild(rz);
+    let startX, startW;
+    rz.addEventListener("mousedown", e => {
+      e.stopPropagation();
+      rz.classList.add("dragging");
+      startX = e.pageX; startW = th.offsetWidth;
+      const onMove = e2 => { th.style.width = Math.max(40, startW + e2.pageX - startX) + "px"; };
+      const onUp   = () => {
+        rz.classList.remove("dragging");
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+  });
 }
 
 function render() {
@@ -285,23 +319,29 @@ function render() {
   if (!arr.length) {
     tableWrap.createEl("p", {
       text: "No properties match the selected filters.",
-      attr: { style: "color:var(--text-muted);padding:20px 0;" }
+      attr: { style: "color:var(--text-muted);padding:20px;" }
     });
     return;
   }
 
   const tbl = tableWrap.createEl("table", { cls: "af-tbl" });
-  const htr = tbl.createEl("thead").createEl("tr");
 
+  // colgroup sets initial column widths; individual th.style.width takes over after drag
+  const cg = tbl.createEl("colgroup");
+  COLS.forEach(c => { const col = cg.createEl("col"); col.style.width = c.w + "px"; });
+
+  const htr = tbl.createEl("thead").createEl("tr");
   for (const col of COLS) {
     const th = htr.createEl("th", { text: col.label });
     if (sortCol === col.key) th.classList.add("sort-" + sortDir);
-    th.addEventListener("click", () => {
+    th.addEventListener("click", e => {
+      if (e.target.classList.contains("col-rz")) return; // ignore drag clicks
       sortDir = (sortCol === col.key) ? (sortDir === "asc" ? "desc" : "asc") : col.def;
       sortCol = col.key;
       render();
     });
   }
+  addColResizers(tbl);
 
   const tb = tbl.createEl("tbody");
   for (const p of arr) {
