@@ -20,7 +20,7 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import requests
 
@@ -267,5 +267,3 @@ class Geocoder:
         return listings
 
 
-# Allow direct import of List for type hint in geocode_listings
-from typing import List  # noqa: E402 (placed here to avoid circular lint)
