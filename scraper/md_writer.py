@@ -129,6 +129,7 @@ class MDWriter:
 
         return (
             f"---\n{fm_str}---\n\n"
+            f"{_render_summary(listing)}\n"
             f"{NOTES_BOUNDARY}\n"
             f"<!-- Your personal notes — scraper never touches below this line -->\n"
             f"{pos_line}"
@@ -233,7 +234,15 @@ class MDWriter:
             new_fm, allow_unicode=True, default_flow_style=False, sort_keys=False
         )
 
-        return f"---\n{new_fm_str}---\n{body}"
+        # Regenerate summary block (between --- and ## Notes);
+        # preserve everything from ## Notes onward untouched
+        notes_idx = body.find(f"\n{NOTES_BOUNDARY}")
+        if notes_idx != -1:
+            notes_and_below = body[notes_idx:]
+        else:
+            notes_and_below = f"\n{NOTES_BOUNDARY}\n<!-- Your personal notes — scraper never touches below this line -->\n"
+
+        return f"---\n{new_fm_str}---\n\n{_render_summary(listing)}\n{notes_and_below}"
 
     # ── Read helpers ──────────────────────────────────────────────────────────
 
@@ -312,6 +321,67 @@ SORT auction_date ASC
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────
+
+def _render_summary(listing: Dict) -> str:
+    """
+    Render a clean Map View popup / note header block.
+    Mirrors the information priority of BidNow/LelongTips listing cards.
+    Scraper regenerates this section on every write (safe to overwrite).
+    """
+    price = listing.get("reserve_price", 0) or 0
+    bmv = listing.get("bmv_percent", 0) or listing.get("bmv_pct", 0) or 0
+    auction_date = listing.get("auction_date", "—")
+    auction_time = listing.get("auction_time", "") or ""
+    prop_type = (listing.get("property_type", "") or "").replace("_", " ").title()
+    bank = listing.get("bank", "") or ""
+    lawyer = listing.get("lawyer", "") or ""
+    auctioneer = listing.get("auctioneer", "") or ""
+    auction_type = listing.get("auction_type", "") or ""
+    tenure = listing.get("tenure", "") or ""
+    sqft = listing.get("built_up_sqft", 0) or listing.get("land_area_sqft", 0) or 0
+    address = listing.get("full_address", "") or ""
+    auction_count = listing.get("auction_count", 1) or 1
+    days = listing.get("days_to_auction", 0) or 0
+    deposit_pct = listing.get("deposit_pct", 10) or 10
+    deposit_amount = listing.get("deposit_amount", 0) or 0
+    source_bn = listing.get("url", listing.get("source_bn", "")) or ""
+
+    # Format price
+    price_str = f"RM {price:,.0f}" if price else "RM —"
+    deposit_str = f"RM {deposit_amount:,.0f}" if deposit_amount else f"RM {price * deposit_pct / 100:,.0f}"
+    sqft_str = f"{sqft:,.0f} sqft" if sqft else "—"
+    bmv_str = f"-{bmv}% BMV" if bmv else ""
+    days_str = f"{days}d to auction" if days > 0 else ("Today!" if days == 0 else "")
+    round_str = f" · {auction_count}{'st' if auction_count==1 else 'nd' if auction_count==2 else 'rd' if auction_count==3 else 'th'} Auction" if auction_count > 1 else ""
+    time_str = f" · {auction_time}" if auction_time else ""
+    link_str = f"[View on BidNow]({source_bn})" if source_bn else ""
+
+    lines = [
+        f"## {prop_type} · {price_str} {bmv_str}",
+        f"",
+        f"| | |",
+        f"|---|---|",
+        f"| 📅 Auction | **{auction_date}**{time_str} · {days_str}{round_str} |",
+        f"| 💰 Reserve | **{price_str}** · Deposit {deposit_str} ({deposit_pct:.0f}%) |",
+        f"| 🏠 Type | {prop_type} · {tenure.title()} · {sqft_str} |",
+        f"| ⚖️ Type | {auction_type} |",
+    ]
+    if bank:
+        lines.append(f"| 🏦 Bank | {bank} |")
+    if lawyer:
+        lines.append(f"| ⚖️ Lawyer | {lawyer} |")
+    if auctioneer:
+        lines.append(f"| 🔨 Auctioneer | {auctioneer} |")
+    lines += [
+        f"| 📍 Address | {address} |",
+        f"",
+    ]
+    if link_str:
+        lines.append(link_str)
+        lines.append("")
+
+    return "\n".join(lines)
+
 
 def _clean_city(district: str) -> str:
     """Strip leading 5-digit postcode from district string e.g. '11700 Gelugor' → 'Gelugor'."""

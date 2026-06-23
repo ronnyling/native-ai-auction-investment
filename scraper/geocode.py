@@ -17,6 +17,7 @@ Cache value: {"lat": float, "lng": float, "source": "exact"|"postcode_centroid"}
 """
 
 import json
+import random
 import re
 import time
 from pathlib import Path
@@ -138,24 +139,56 @@ class Geocoder:
         """
         Return {"lat": float, "lng": float, "source": str} or None.
 
-        Checks cache first; falls back through Nominatim → postcode centroid.
+        Tries multiple Nominatim query strategies before falling back to
+        postcode centroid (which causes pin stacking on the map).
         """
         key = self._cache_key(address)
         if key in self.cache:
             return self.cache[key]
 
-        # Try Nominatim exact address
+        # Strategy 1 — full address
         result = self._nominatim_query(address + ", Malaysia")
         if result:
             result["source"] = "exact"
             self._store(key, result)
             return result
 
-        # Fallback: postcode centroid
+        # Strategy 2 — strip unit/block prefix (e.g. "No. 24-5-2, Block A, ")
+        stripped = re.sub(
+            r"^(No\.?\s*[\w\d\-]+,?\s*|Unit\s*[\w\d\-]+,?\s*|Block\s*[\w\d\-]+,?\s*){1,3}",
+            "", address, flags=re.IGNORECASE
+        ).strip().lstrip(",").strip()
+        if stripped and stripped != address:
+            result = self._nominatim_query(stripped + ", Malaysia")
+            if result:
+                result["source"] = "stripped"
+                self._store(key, result)
+                return result
+
+        # Strategy 3 — street + postcode + Malaysia (most reliable fallback)
         postcode = self._extract_postcode(address)
+        street = self._extract_street(address)
+        if street and postcode:
+            result = self._nominatim_query(f"{street}, {postcode}, Malaysia")
+            if result:
+                result["source"] = "street_postcode"
+                self._store(key, result)
+                return result
+
+        # Strategy 4 — postcode-only Nominatim (area centroid, better than lookup table)
+        if postcode:
+            result = self._nominatim_query(f"{postcode}, Malaysia")
+            if result:
+                result = self._jitter(result)  # spread overlapping pins
+                result["source"] = "postcode_nominatim"
+                self._store(key, result)
+                return result
+
+        # Final fallback — static lookup table centroid
         if postcode:
             centroid = self._postcode_centroid(postcode)
             if centroid:
+                centroid = self._jitter(centroid)
                 centroid["source"] = "postcode_centroid"
                 self._store(key, centroid)
                 return centroid
@@ -186,6 +219,24 @@ class Geocoder:
     @staticmethod
     def _cache_key(address: str) -> str:
         return re.sub(r"\s+", " ", address.lower().strip())
+
+    @staticmethod
+    def _extract_street(address: str) -> str:
+        """Extract the street/road name from a Malaysian address string."""
+        # Look for Jalan/Lorong/Persiaran/Lebuh/Jln patterns
+        m = re.search(
+            r"((?:Jalan|Jln|Lorong|Persiaran|Lebuh|Lebuhraya|Taman|Tmn)\s+[\w\s/]+?)(?:,|\d{5})",
+            address, re.IGNORECASE
+        )
+        return m.group(1).strip() if m else ""
+
+    @staticmethod
+    def _jitter(result: Dict, radius: float = 0.003) -> Dict:
+        """Add a tiny random offset so centroid-fallback pins don't all stack."""
+        out = dict(result)
+        out["lat"] = result["lat"] + random.uniform(-radius, radius)
+        out["lng"] = result["lng"] + random.uniform(-radius, radius)
+        return out
 
     @staticmethod
     def _extract_postcode(address: str) -> str:
