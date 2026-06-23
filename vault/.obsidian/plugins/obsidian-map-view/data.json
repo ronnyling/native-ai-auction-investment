@@ -1,10 +1,10 @@
 {
   "defaultState": {
     "name": "Default",
-    "mapZoom": 7,
+    "mapZoom": 13,
     "mapCenter": {
-      "lat": 3.9,
-      "lng": 109.0
+      "lat": 3.03,
+      "lng": 101.62
     },
     "query": "path:\"Properties\"",
     "queryError": false,
