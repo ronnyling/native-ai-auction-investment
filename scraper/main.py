@@ -51,7 +51,8 @@ KNOWN_IDS_PATH = os.environ.get(
     "KNOWN_IDS_PATH",
     str(SCRIPT_DIR / "known_ids.json"),
 )
-MAX_PAGES = int(os.environ.get("MAX_PAGES", 0)) or None
+_max_pages_raw = os.environ.get("MAX_PAGES", "").strip()
+MAX_PAGES = int(_max_pages_raw) if _max_pages_raw else None
 SCRAPE_STATES = os.environ.get("SCRAPE_STATES", "")
 
 # ── Imports (local modules) ───────────────────────────────────────────────────
