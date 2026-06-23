@@ -13,11 +13,11 @@ desc.innerHTML = "Search and filter all scraped listings. Click column headers t
 // ── Filter state ──────────────────────────────────────────────────────────────
 let sortCol = "date", sortDir = "asc";
 let searchText = "";
-let fTiming = "", fAuction = "";
+let fTiming = "", fAuction = "", fMarketOnly = false;
 const fStatus = new Set();
 const fState  = new Set();
 const fType   = new Set();
-let fMinP = 0, fMaxP = Infinity, fMinBmv = 0;
+let fMinP = 0, fMaxP = Infinity, fMinBmv = 0, fMinYield = 0;
 
 const today = new Date().toISOString().slice(0, 10);
 const badgeCls = {
@@ -227,12 +227,22 @@ const sAuction = mkSel("⚖️ Auction", [
 const iMinP   = mkInp("Min Price (RM)", "e.g. 100000",  bar);
 const iMaxP   = mkInp("Max Price (RM)", "e.g. 2000000", bar);
 const iMinBmv = mkInp("Min BMV%",       "e.g. 10",      bar);
+const iMinYield = mkInp("Min Yield%",   "e.g. 5",       bar);
+
+// Market-data-only toggle
+const mktGrp = bar.createDiv({ cls: "af-grp" });
+mktGrp.createEl("span", { cls: "af-lbl", text: "🔬 Market Data" });
+const mktWrap = mktGrp.createDiv({ attr: { style: "display:flex;align-items:center;gap:6px;padding:5px 0;" } });
+const mktChk  = mktWrap.createEl("input", { attr: { type: "checkbox", id: "af-mkt-only" } });
+mktWrap.createEl("label", { attr: { for: "af-mkt-only", style: "font-size:13px;cursor:pointer;" }, text: "Only enriched" });
+mktChk.addEventListener("change", () => { fMarketOnly = mktChk.checked; render(); });
 
 sTiming.addEventListener ("change", () => { fTiming  = sTiming.value;  render(); });
 sAuction.addEventListener("change", () => { fAuction = sAuction.value; render(); });
-iMinP.addEventListener   ("input",  () => { fMinP  = parseFloat(iMinP.value)   || 0;        render(); });
-iMaxP.addEventListener   ("input",  () => { fMaxP  = parseFloat(iMaxP.value)   || Infinity; render(); });
-iMinBmv.addEventListener ("input",  () => { fMinBmv = parseFloat(iMinBmv.value) || 0;       render(); });
+iMinP.addEventListener   ("input",  () => { fMinP     = parseFloat(iMinP.value)    || 0;        render(); });
+iMaxP.addEventListener   ("input",  () => { fMaxP     = parseFloat(iMaxP.value)    || Infinity; render(); });
+iMinBmv.addEventListener ("input",  () => { fMinBmv   = parseFloat(iMinBmv.value)  || 0;        render(); });
+iMinYield.addEventListener("input", () => { fMinYield = parseFloat(iMinYield.value) || 0;        render(); });
 
 // ── Results area ──────────────────────────────────────────────────────────────
 const countDiv  = con.createDiv({ cls: "af-count" });
@@ -241,15 +251,19 @@ const tableWrap  = scrollWrap;  // table renders directly inside scroll containe
 
 // Column definitions: key, header label, default sort dir, initial width (px)
 const COLS = [
-  { key:"address",  label:"Address / Property", def:"asc",  w:280 },
-  { key:"price",    label:"Reserve Price",       def:"asc",  w:130 },
-  { key:"bmv",      label:"BMV%",                def:"desc", w:70  },
-  { key:"type",     label:"Type",                def:"asc",  w:110 },
-  { key:"location", label:"State · City",        def:"asc",  w:160 },
-  { key:"date",     label:"Auction Date",        def:"asc",  w:115 },
-  { key:"days",     label:"Days Left",           def:"asc",  w:85  },
-  { key:"rnd",      label:"Rnd",                 def:"desc", w:50  },
-  { key:"status",   label:"Status",              def:"asc",  w:105 },
+  { key:"address",      label:"Address / Property",  def:"asc",  w:260 },
+  { key:"price",        label:"Reserve Price",        def:"asc",  w:120 },
+  { key:"bmv",          label:"BMV%",                 def:"desc", w:65  },
+  { key:"type",         label:"Type",                 def:"asc",  w:100 },
+  { key:"location",     label:"State · City",         def:"asc",  w:150 },
+  { key:"date",         label:"Auction Date",         def:"asc",  w:110 },
+  { key:"days",         label:"Days Left",            def:"asc",  w:75  },
+  { key:"rnd",          label:"Rnd",                  def:"desc", w:45  },
+  { key:"mkt_val",      label:"Est. Market",          def:"desc", w:110 },
+  { key:"ind_bmv",      label:"Indep. BMV%",          def:"desc", w:90  },
+  { key:"yield",        label:"Yield%",               def:"desc", w:70  },
+  { key:"rent_est",     label:"Rental Est.",          def:"desc", w:95  },
+  { key:"status",       label:"Status",               def:"asc",  w:95  },
 ];
 
 function sortKey(p) {
@@ -262,6 +276,10 @@ function sortKey(p) {
     case "date":     return String(p.auction_date || "");
     case "days":     return p.days_to_auction ?? 9999;
     case "rnd":      return p.auction_count || 1;
+    case "mkt_val":  return p.market_value_est || 0;
+    case "ind_bmv":  return p.independent_bmv_pct ?? -9999;
+    case "yield":    return p.est_rental_yield || 0;
+    case "rent_est": return p.market_rent_est || 0;
     case "status":   return p.status || "";
     default:         return "";
   }
@@ -300,6 +318,8 @@ function render() {
     .where(p => !fAuction || (p.auction_type || "") === fAuction)
     .where(p => (p.reserve_price || 0) >= fMinP && (p.reserve_price || 0) <= fMaxP)
     .where(p => (p.bmv_pct || 0) >= fMinBmv)
+    .where(p => !fMinYield || (p.est_rental_yield || 0) >= fMinYield)
+    .where(p => !fMarketOnly || p.market_sale_psf)
     .where(p => {
       if (!fTiming) return true;
       const d = p.auction_date ? String(p.auction_date).slice(0, 10) : "";
@@ -363,6 +383,33 @@ function render() {
     tr.createEl("td", { text: p.auction_date ? String(p.auction_date).slice(0, 10) : "—" });
     tr.createEl("td", { text: p.days_to_auction != null ? p.days_to_auction + "d" : "—" });
     tr.createEl("td", { text: String(p.auction_count || 1) });
+
+    // Market columns
+    const hasMkt = !!p.market_sale_psf;
+    const mktStyle = hasMkt ? "" : "color:var(--text-faint);";
+    tr.createEl("td", {
+      text: hasMkt ? "RM " + (p.market_value_est || 0).toLocaleString() : "—",
+      attr: { style: mktStyle }
+    });
+    const iBmv = p.independent_bmv_pct;
+    const iBmvTd = tr.createEl("td");
+    if (hasMkt && iBmv != null) {
+      iBmvTd.createEl("span", {
+        text: iBmv + "%",
+        attr: { style: `font-weight:600;color:${iBmv >= 20 ? "#6fcf6f" : iBmv >= 0 ? "#ffd166" : "#ff7777"};` }
+      });
+    } else {
+      iBmvTd.textContent = "—";
+      iBmvTd.setAttribute("style", "color:var(--text-faint);");
+    }
+    tr.createEl("td", {
+      text: hasMkt && p.est_rental_yield != null ? p.est_rental_yield + "%" : "—",
+      attr: { style: mktStyle }
+    });
+    tr.createEl("td", {
+      text: hasMkt && p.market_rent_est ? "RM " + p.market_rent_est.toLocaleString() + "/mo" : "—",
+      attr: { style: mktStyle }
+    });
 
     const tdS = tr.createEl("td");
     tdS.createEl("span", {

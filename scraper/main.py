@@ -54,6 +54,12 @@ KNOWN_IDS_PATH = os.environ.get(
 _max_pages_raw = os.environ.get("MAX_PAGES", "").strip()
 MAX_PAGES = int(_max_pages_raw) if _max_pages_raw else None
 SCRAPE_STATES = os.environ.get("SCRAPE_STATES", "")
+MARKET_CACHE_PATH = os.environ.get(
+    "MARKET_CACHE_PATH",
+    str(SCRIPT_DIR / "market_cache.json"),
+)
+# Set RUN_MARKET=1 to force-run market research stage (default: auto, skip if cache fresh)
+RUN_MARKET = os.environ.get("RUN_MARKET", "auto").strip().lower()
 
 # ── Imports (local modules) ───────────────────────────────────────────────────
 
@@ -63,6 +69,7 @@ from lelongtips import LelongTipsScraper
 from dedup_merger import cross_reference, detect_reauction, compute_derived_fields
 from geocode import Geocoder
 from md_writer import MDWriter, write_daily_note
+from market_research import MarketResearcher
 
 
 # ── Known IDs helpers ─────────────────────────────────────────────────────────
@@ -194,14 +201,46 @@ def run():
     save_known_ids(all_known)
     print(f"  {written} notes written, {errors} errors")
 
-    # ── Stage 8: Daily Note ───────────────────────────────────────────────────
-    print("\n[Stage 8] Writing daily note...")
+    # ── Stage 8: Market Research (high-priority only) ────────────────────────
+    print("\n[Stage 8] Market research enrichment...")
+    market_enriched = 0
+    market_skipped  = 0
+    try:
+        researcher = MarketResearcher(MARKET_CACHE_PATH)
+        if RUN_MARKET == "1":
+            print("  Force-refreshing market cache (RUN_MARKET=1)...")
+            researcher.force_refresh()
+
+        # Collect enriched listings (those with market data) and re-write their notes
+        enrichable = [l for _, l, _ in enriched]
+        m_enriched, m_skipped = researcher.enrich_listings(enrichable)
+        market_enriched = m_enriched
+        market_skipped  = m_skipped
+        print(f"  {m_enriched} high-priority properties enriched with market data")
+        print(f"  {m_skipped} properties skipped (low priority or no area match)")
+
+        # Re-write notes that received market data
+        mkt_written = 0
+        for listing in enrichable:
+            if listing.get("market_sale_psf"):
+                try:
+                    writer.write(listing, "update_price")  # update-only, preserves Notes
+                    mkt_written += 1
+                except Exception as exc:
+                    print(f"  [market write] ERROR {listing.get('listing_id')}: {exc}")
+        print(f"  {mkt_written} notes updated with market data")
+    except Exception as exc:
+        print(f"  [market] Stage error: {exc}")
+        import traceback; traceback.print_exc()
+
+    # ── Stage 9: Daily Note ───────────────────────────────────────────────────
+    print("\n[Stage 9] Writing daily note...")
     try:
         write_daily_note(DAILY_NOTES_PATH, TEMPLATES_PATH)
     except Exception as exc:
         print(f"  [daily note] ERROR: {exc}")
 
-    # ── Summary ───────────────────────────────────────────────────────────────
+    # ── Summary ──────────────────────────────────────────────────────────────
     print(f"\n{'='*60}")
     print(f"  Run complete — {today}")
     print(f"  BidNow fetched   : {len(all_bn_listings)}")
@@ -211,6 +250,7 @@ def run():
     print(f"  Price updates    : {actions['update_price']}")
     print(f"  New rounds       : {actions['new_round']}")
     print(f"  Notes written    : {written}")
+    print(f"  Market enriched  : {market_enriched}")
     print(f"  Total vault size : {len(all_known)} known IDs")
     print(f"{'='*60}\n")
 

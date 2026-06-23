@@ -38,6 +38,10 @@ SCRAPER_OWNED_KEYS = {
     "auction_history",
     "scrape_date",
     "source_bn", "source_llt",
+    # Market research fields
+    "market_sale_psf", "market_rent_psf", "market_rent_est",
+    "market_value_est", "independent_bmv_pct", "est_rental_yield",
+    "market_comps_date", "market_comps_n", "market_source", "market_area_match",
 }
 
 # Keys preserved from existing notes (user-owned)
@@ -191,6 +195,17 @@ class MDWriter:
             "pos_url": listing.get("pos_url", ""),
             # History (YAML block)
             "auction_history": listing.get("auction_history", []),
+            # Market research (optional — only set if Stage 8 ran)
+            "market_sale_psf":     listing.get("market_sale_psf"),
+            "market_rent_psf":     listing.get("market_rent_psf"),
+            "market_rent_est":     listing.get("market_rent_est"),
+            "market_value_est":    listing.get("market_value_est"),
+            "independent_bmv_pct": listing.get("independent_bmv_pct"),
+            "est_rental_yield":    listing.get("est_rental_yield"),
+            "market_comps_date":   listing.get("market_comps_date"),
+            "market_comps_n":      listing.get("market_comps_n"),
+            "market_source":       listing.get("market_source"),
+            "market_area_match":   listing.get("market_area_match"),
             # Scrape metadata
             "scrape_date": str(date.today()),
             "source_bn": listing.get("url", ""),
@@ -356,6 +371,15 @@ def _render_summary(listing: Dict) -> str:
     time_str = f" · {auction_time}" if auction_time else ""
     link_str = f"[View on BidNow]({source_bn})" if source_bn else ""
 
+    # Market research fields
+    market_sale_psf     = listing.get("market_sale_psf")
+    market_rent_est     = listing.get("market_rent_est")
+    market_value_est    = listing.get("market_value_est")
+    independent_bmv_pct = listing.get("independent_bmv_pct")
+    est_rental_yield    = listing.get("est_rental_yield")
+    market_comps_date   = listing.get("market_comps_date", "")
+    market_comps_n      = listing.get("market_comps_n", 0)
+
     lines = [
         f"## {prop_type} · {price_str} {bmv_str}",
         f"",
@@ -372,10 +396,22 @@ def _render_summary(listing: Dict) -> str:
         lines.append(f"| ⚖️ Lawyer | {lawyer} |")
     if auctioneer:
         lines.append(f"| 🔨 Auctioneer | {auctioneer} |")
-    lines += [
-        f"| 📍 Address | {address} |",
-        f"",
-    ]
+    lines.append(f"| 📍 Address | {address} |")
+
+    # Market research section (shown only when data available)
+    if market_sale_psf:
+        mv_str    = f"RM {market_value_est:,}" if market_value_est else "—"
+        bmv_ind   = f" · **{independent_bmv_pct:+d}% BMV**" if independent_bmv_pct is not None else ""
+        rent_str  = f"RM {market_rent_est:,}/mo" if market_rent_est else "—"
+        yield_str = f" · {est_rental_yield:.1f}% yield" if est_rental_yield else ""
+        lines += [
+            f"",
+            f"| 📊 Market Sale | RM {market_sale_psf:,.2f}/sqft · Est. {mv_str}{bmv_ind} |",
+            f"| 💹 Rental Est. | {rent_str}{yield_str} |",
+            f"| 🔬 Comps | {market_comps_n} listings · {market_comps_date} (iProperty) |",
+        ]
+
+    lines += [""]
     if link_str:
         lines.append(link_str)
         lines.append("")
