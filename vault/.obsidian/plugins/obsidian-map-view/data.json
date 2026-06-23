@@ -29,59 +29,80 @@
       "autoFit": true
     },
     {
+      "name": "📍 Puchong",
+      "mapZoom": 13,
+      "mapCenter": { "lat": 3.03, "lng": 101.62 },
+      "query": "path:\"Properties\" tag:puchong",
+      "autoFit": false
+    },
+    {
       "name": "Selangor",
       "mapZoom": 10,
       "mapCenter": { "lat": 3.15, "lng": 101.6 },
-      "query": "path:\"Properties\" [state:Selangor]",
+      "query": "path:\"Properties\" tag:selangor",
       "autoFit": true
     },
     {
       "name": "Kuala Lumpur",
       "mapZoom": 11,
       "mapCenter": { "lat": 3.15, "lng": 101.7 },
-      "query": "path:\"Properties\" [state:Kuala Lumpur]",
+      "query": "path:\"Properties\" tag:kuala-lumpur",
       "autoFit": true
     },
     {
       "name": "Penang",
       "mapZoom": 11,
       "mapCenter": { "lat": 5.41, "lng": 100.33 },
-      "query": "path:\"Properties\" [state:Penang]",
+      "query": "path:\"Properties\" tag:penang",
       "autoFit": true
     },
     {
       "name": "Johor",
       "mapZoom": 10,
       "mapCenter": { "lat": 1.86, "lng": 103.6 },
-      "query": "path:\"Properties\" [state:Johor]",
+      "query": "path:\"Properties\" tag:johor",
       "autoFit": true
     },
     {
-      "name": "New Listings",
+      "name": "Apartments",
       "mapZoom": 7,
       "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" [status:new]",
+      "query": "path:\"Properties\" tag:apartment",
       "autoFit": true
     },
     {
-      "name": "Shortlisted",
+      "name": "Terrace / Link",
       "mapZoom": 7,
       "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" [status:shortlisted]",
+      "query": "path:\"Properties\" tag:terrace",
+      "autoFit": true
+    },
+    {
+      "name": "LACA Only",
+      "mapZoom": 7,
+      "mapCenter": { "lat": 3.9, "lng": 109.0 },
+      "query": "path:\"Properties\" tag:laca -tag:non-laca",
+      "autoFit": true
+    },
+    {
+      "name": "Re-auctions",
+      "mapZoom": 7,
+      "mapCenter": { "lat": 3.9, "lng": 109.0 },
+      "query": "path:\"Properties\" tag:reauction",
       "autoFit": true
     },
     {
       "name": "High BMV (>30%)",
       "mapZoom": 7,
       "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" bmv_pct>30",
+      "query": "path:\"Properties\" tag:high-bmv",
       "autoFit": true
     },
     {
-      "name": "This Week",
+      "name": "🌟 Shortlisted",
       "mapZoom": 7,
       "mapCenter": { "lat": 3.9, "lng": 109.0 },
-      "query": "path:\"Properties\" days_to_auction<=7",
+      "query": "path:\"Properties\" [status:shortlisted]",
       "autoFit": true
     }
   ],
@@ -125,7 +146,7 @@
   "zoomOnGoFromNote": 15,
   "autoZoom": true,
   "onlyOneExpanded": true,
-  "markerClickBehavior": "replaceCurrent",
+  "markerClickBehavior": "dedicatedPane",
   "markerCtrlClickBehavior": "dedicatedPane",
   "markerMiddleClickBehavior": "dedicatedTab",
   "openMapBehavior": "replaceCurrent",
@@ -137,7 +158,7 @@
   "newNoteTemplate": "",
   "showNoteNamePopup": true,
   "showLinkNameInPopup": "always",
-  "showNativeObsidianHoverPopup": true,
+  "showNativeObsidianHoverPopup": false,
   "showNotePreview": true,
   "showClusterPreview": true,
   "debug": false,
