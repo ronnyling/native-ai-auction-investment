@@ -17888,5 +17888,155 @@
     "lat": 5.3317,
     "lng": 103.1408,
     "source": "postcode_centroid"
+  },
+  "no. 04-11, block f, rumah pangsa daisi, jalan bunga daisi 8, taman plentong utama, 81750 masai, johor": {
+    "lat": 1.5275624,
+    "lng": 103.826025,
+    "source": "street_postcode"
+  },
+  "no. #08-10, menara a, residensi mutiara, jalan mutiara emas utama, taman mount austin, 81100 johor bahru, johor": {
+    "lat": 1.5462377,
+    "lng": 103.7887376,
+    "source": "street_postcode"
+  },
+  "no. s12-019, unicity serviced suites, pusat komersial seksyen 3, seremban 3, 70300 seremban, negeri sembilan": {
+    "lat": 2.701377005183577,
+    "lng": 101.91690179170106,
+    "source": "postcode_nominatim"
+  },
+  "no. c-09-12, tower c, horizon suites, jalan hvo, bandar sunsuria, 43900 sepang, selangor": {
+    "lat": 2.8401382,
+    "lng": 101.6996351,
+    "source": "street_postcode"
+  },
+  "no. 32a-6, blok d, sri manja square 1, jalan pjs 3/48, taman sri manja, 46000 petaling jaya, selangor": {
+    "lat": 3.0742617,
+    "lng": 101.6489723,
+    "source": "street_postcode"
+  },
+  "no. 35a-3, jalan sm 3, taman sunway batu caves, 68100 batu caves, selangor": {
+    "lat": 3.2383427,
+    "lng": 101.6906107,
+    "source": "stripped"
+  },
+  "no. a1-18-10, block a1, gravit8 (gravit8 @ klang south), jalan bayu laut/ks 9, kota bayuemas, 41200 pelabuhan klang, selangor": {
+    "lat": 3.0043051589428895,
+    "lng": 101.44199206899226,
+    "source": "postcode_nominatim"
+  },
+  "no. c1-30-12, savanna executive suites, jalan southville 2, southville city, 43800 dengkil, selangor": {
+    "lat": 2.9039057,
+    "lng": 101.7631934,
+    "source": "street_postcode"
+  },
+  "no. a1-11-9, block a1, cyberia smarthomes condominium, persiaran multimedia, cyber 11, 63000 cyberjaya, selangor": {
+    "lat": 2.9213269,
+    "lng": 101.6478185,
+    "source": "street_postcode"
+  },
+  "no. 50, jalan tiara south 2, tiara south, 43500 semenyih, selangor": {
+    "lat": 2.9302063,
+    "lng": 101.8424076,
+    "source": "street_postcode"
+  },
+  "no. mc-b414, block b, jalan pinggiran delima, taman pinggiran delima r/pangsa, 43100 hulu langat, selangor": {
+    "lat": 3.1217242,
+    "lng": 101.8092773,
+    "source": "street_postcode"
+  },
+  "no. d-05-07, ampang prima kondominium, jalan wawasan ampang 2/5, bandar baru ampang, 68000 ampang, selangor": {
+    "lat": 3.1450004,
+    "lng": 101.7699006,
+    "source": "street_postcode"
+  },
+  "no. 2-7, 2nd floor, block i, flat taman dagang, taman dagang, 68000 ampang, selangor": {
+    "lat": 3.1480328,
+    "lng": 101.7565282,
+    "source": "street_postcode"
+  },
+  "no. a-15-02, pangsapuri lembah jaya, jalan lembah jaya, taman industri lembah jaya, 68000 ampang, selangor": {
+    "lat": 3.1377317,
+    "lng": 101.7817395,
+    "source": "exact"
+  },
+  "no. 13a-2b, plaza umno, jalan batu caves, taman batu caves, 68100 batu caves, selangor": {
+    "lat": 3.2359959,
+    "lng": 101.6791808,
+    "source": "stripped"
+  },
+  "no. 21, blok e, rumah pangsa, jalan kosas 3/12, taman kosas, 68000 ampang, selangor": {
+    "lat": 3.1466647,
+    "lng": 101.7755917,
+    "source": "street_postcode"
+  },
+  "no. c-512, block c, jalan kelisa 1, apartment kelisa ria, 43000 kajang, selangor": {
+    "lat": 2.9465056,
+    "lng": 101.7896999,
+    "source": "street_postcode"
+  },
+  "no. mr1-14-04, sri acappella serviced apartments, no. 1, jalan lompat tinggi 13/33, seksyen 13, 40100 shah alam, selangor": {
+    "lat": 3.0884746,
+    "lng": 101.5474761,
+    "source": "street_postcode"
+  },
+  "no. 41, jalan eco forest 1/2d, eco forest, 43500 semenyih, selangor": {
+    "lat": 2.927724,
+    "lng": 101.8989525,
+    "source": "street_postcode"
+  },
+  "no. 91-01-g6, lingkaran dagang mas, taman mas, 47130 puchong, selangor": {
+    "lat": 5.2883073,
+    "lng": 100.4794701,
+    "source": "street_postcode"
+  },
+  "no. 23, jalan kajang perdana 8a, taman kajang perdana, 43000 kajang, selangor": {
+    "lat": 2.9901479,
+    "lng": 101.8143327,
+    "source": "street_postcode"
+  },
+  "no. 17, jalan cengal 3, desa alam ria, 44300 batang kali, selangor": {
+    "lat": 3.4663247,
+    "lng": 101.6592198,
+    "source": "street_postcode"
+  },
+  "no. 28, jalan pinggiran saujana 2, taman pinggiran saujana, 43000 kajang, selangor": {
+    "lat": 3.0183965,
+    "lng": 101.8038526,
+    "source": "exact"
+  },
+  "no. 17-13, jalan saville, saville @ d' lake, 47130 puchong, selangor": {
+    "lat": 2.9574876,
+    "lng": 101.6164663,
+    "source": "street_postcode"
+  },
+  "no. 45, jalan seri siantan 50, taman seri andalas, 41200 klang, selangor": {
+    "lat": 3.0195176,
+    "lng": 101.448369,
+    "source": "street_postcode"
+  },
+  "no. b-3a-02, block b, casa villa condominium, taman berjaya baru, sungai chua, 43000 kajang, selangor": {
+    "lat": 4.6653118,
+    "lng": 101.1544858,
+    "source": "street_postcode"
+  },
+  "no. 54, jalan tkp 1, taman kantan permai, 43000 kajang, selangor": {
+    "lat": 3.0150714,
+    "lng": 101.8033905,
+    "source": "exact"
+  },
+  "no. 45, jalan ma 1, taman meranti aman, 47120 puchong, selangor": {
+    "lat": 2.9597617,
+    "lng": 101.6245754,
+    "source": "street_postcode"
+  },
+  "no. 12, jalan tps 2/18b, taman pelangi semenyih 2, 43500 semenyih, selangor": {
+    "lat": 2.9205982,
+    "lng": 101.8694795,
+    "source": "street_postcode"
+  },
+  "no. 26, jalan 1/4, taman seri jaromas, 42600 jenjarom, selangor": {
+    "lat": 2.8614431,
+    "lng": 101.5108677,
+    "source": "stripped"
   }
 }
