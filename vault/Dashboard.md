@@ -13,7 +13,7 @@ desc.innerHTML = "Search and filter all scraped listings. Click column headers t
 // ── Filter state ──────────────────────────────────────────────────────────────
 let sortCol = "date", sortDir = "asc";
 let searchText = "";
-let fTiming = "", fAuction = "", fMarketOnly = false;
+let fTiming = "", fAuction = "", fMarketOnly = false, fAgentRec = "";
 const fStatus = new Set();
 const fState  = new Set();
 const fType   = new Set();
@@ -104,6 +104,11 @@ con.createEl("style").textContent = `
   .s-visiting    { background:#3d1e00; color:#ffaa55; }
   .s-bid         { background:#4f1e1e; color:#ff7777; }
   .s-passed      { background:#2a2a2a; color:#888; }
+  /* ── agent recommendation badges ── */
+  .ar-skip        { background:#2a2a2a; color:#888; }
+  .ar-investigate { background:#1e3a5f; color:#7eb8f7; }
+  .ar-shortlist   { background:#3d2e00; color:#ffd166; }
+  .ar-bid         { background:#1a3d1e; color:#6fcf6f; }
 `;
 
 // ── Search bar ────────────────────────────────────────────────────────────────
@@ -237,6 +242,13 @@ const mktChk  = mktWrap.createEl("input", { attr: { type: "checkbox", id: "af-mk
 mktWrap.createEl("label", { attr: { for: "af-mkt-only", style: "font-size:13px;cursor:pointer;" }, text: "Only enriched" });
 mktChk.addEventListener("change", () => { fMarketOnly = mktChk.checked; render(); });
 
+// Agent recommendation filter
+const sAgentRec = mkSel("🤖 AI Rec", [
+  ["","All"], ["bid","🟢 Bid"], ["shortlist","🟠 Shortlist"],
+  ["investigate","🟡 Investigate"], ["skip","🔴 Skip"]
+], bar);
+sAgentRec.addEventListener("change", () => { fAgentRec = sAgentRec.value; render(); });
+
 sTiming.addEventListener ("change", () => { fTiming  = sTiming.value;  render(); });
 sAuction.addEventListener("change", () => { fAuction = sAuction.value; render(); });
 iMinP.addEventListener   ("input",  () => { fMinP     = parseFloat(iMinP.value)    || 0;        render(); });
@@ -263,6 +275,8 @@ const COLS = [
   { key:"ind_bmv",      label:"Indep. BMV%",          def:"desc", w:90  },
   { key:"yield",        label:"Yield%",               def:"desc", w:70  },
   { key:"rent_est",     label:"Rental Est.",          def:"desc", w:95  },
+  { key:"agent_score",  label:"Score",                def:"desc", w:60  },
+  { key:"agent_rec",    label:"AI Rec",               def:"asc",  w:110 },
   { key:"status",       label:"Status",               def:"asc",  w:95  },
 ];
 
@@ -280,6 +294,8 @@ function sortKey(p) {
     case "ind_bmv":  return p.independent_bmv_pct ?? -9999;
     case "yield":    return p.est_rental_yield || 0;
     case "rent_est": return p.market_rent_est || 0;
+    case "agent_score": return p.agent_score ?? -1;
+    case "agent_rec": return ["bid","shortlist","investigate","skip"].indexOf(p.agent_recommendation || "");
     case "status":   return p.status || "";
     default:         return "";
   }
@@ -320,6 +336,7 @@ function render() {
     .where(p => (p.bmv_pct || 0) >= fMinBmv)
     .where(p => !fMinYield || (p.est_rental_yield || 0) >= fMinYield)
     .where(p => !fMarketOnly || p.market_sale_psf)
+    .where(p => !fAgentRec   || (p.agent_recommendation || "") === fAgentRec)
     .where(p => {
       if (!fTiming) return true;
       const d = p.auction_date ? String(p.auction_date).slice(0, 10) : "";
@@ -410,6 +427,35 @@ function render() {
       text: hasMkt && p.market_rent_est ? "RM " + p.market_rent_est.toLocaleString() + "/mo" : "—",
       attr: { style: mktStyle }
     });
+
+    // Agent columns
+    const hasAgent = !!p.agent_recommendation;
+    const agentStyle = hasAgent ? "" : "color:var(--text-faint);";
+    const scoreTd = tr.createEl("td");
+    if (hasAgent && p.agent_score != null) {
+      const sc = p.agent_score;
+      scoreTd.createEl("span", {
+        text: String(sc),
+        attr: { style: `font-weight:600;color:${sc >= 61 ? "#6fcf6f" : sc >= 31 ? "#ffd166" : "#ff7777"};` }
+      });
+    } else {
+      scoreTd.textContent = "—";
+      scoreTd.setAttribute("style", "color:var(--text-faint);");
+    }
+    const recTd = tr.createEl("td");
+    if (hasAgent) {
+      const recLabel = { skip:"Skip", investigate:"Investigate", shortlist:"Shortlist", bid:"Bid" };
+      const recCls   = { skip:"ar-skip", investigate:"ar-investigate", shortlist:"ar-shortlist", bid:"ar-bid" };
+      const recIcon  = { skip:"🔴", investigate:"🟡", shortlist:"🟠", bid:"🟢" };
+      const rec = p.agent_recommendation || "";
+      recTd.createEl("span", {
+        cls: "af-badge " + (recCls[rec] || ""),
+        text: (recIcon[rec] || "") + " " + (recLabel[rec] || rec)
+      });
+    } else {
+      recTd.textContent = "—";
+      recTd.setAttribute("style", "color:var(--text-faint);");
+    }
 
     const tdS = tr.createEl("td");
     tdS.createEl("span", {

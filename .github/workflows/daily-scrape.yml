@@ -49,6 +49,7 @@ jobs:
           KNOWN_IDS_PATH: ${{ github.workspace }}/scraper/known_ids.json
           SCRAPE_STATES: ${{ github.event.inputs.states }}
           MAX_PAGES: ${{ github.event.inputs.max_pages }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python main.py
 
       - name: Commit updated vault

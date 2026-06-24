@@ -42,6 +42,8 @@ SCRAPER_OWNED_KEYS = {
     "market_sale_psf", "market_rent_psf", "market_rent_est",
     "market_value_est", "independent_bmv_pct", "est_rental_yield",
     "market_comps_date", "market_comps_n", "market_source", "market_area_match",
+    # Analyst agent fields
+    "agent_score", "agent_recommendation", "agent_reasoning", "agent_run_date",
 }
 
 # Keys preserved from existing notes (user-owned)
@@ -206,6 +208,11 @@ class MDWriter:
             "market_comps_n":      listing.get("market_comps_n"),
             "market_source":       listing.get("market_source"),
             "market_area_match":   listing.get("market_area_match"),
+            # Analyst agent (optional — only set if Stage 9 ran)
+            "agent_score":          listing.get("agent_score"),
+            "agent_recommendation": listing.get("agent_recommendation"),
+            "agent_reasoning":      listing.get("agent_reasoning"),
+            "agent_run_date":       listing.get("agent_run_date"),
             # Scrape metadata
             "scrape_date": str(date.today()),
             "source_bn": listing.get("url", ""),
@@ -410,6 +417,21 @@ def _render_summary(listing: Dict) -> str:
             f"| 💹 Rental Est. | {rent_str}{yield_str} |",
             f"| 🔬 Comps | {market_comps_n} listings · {market_comps_date} (iProperty) |",
         ]
+
+    # Agent recommendation section (shown only when agent has run)
+    agent_rec       = listing.get("agent_recommendation")
+    agent_score     = listing.get("agent_score")
+    agent_reasoning = listing.get("agent_reasoning")
+    if agent_rec:
+        rec_icon = {"skip": "🔴", "investigate": "🟡", "shortlist": "🟠", "bid": "🟢"}
+        rec_label = {"skip": "Skip", "investigate": "Investigate", "shortlist": "Shortlist", "bid": "Bid"}
+        score_str = f" · Score **{agent_score}/100**" if agent_score is not None else ""
+        lines += [
+            f"",
+            f"| 🤖 AI Rec | {rec_icon.get(agent_rec, '')} **{rec_label.get(agent_rec, agent_rec.title())}**{score_str} |",
+        ]
+        if agent_reasoning:
+            lines.append(f"| 💭 Reasoning | {agent_reasoning} |")
 
     lines += [""]
     if link_str:

@@ -9,8 +9,9 @@ Stages (run in order):
   5. Re-auction detection against vault index
   6. Geocode (Nominatim + postcode centroid fallback)
   7. Write / update vault notes
-  8. Write today's Daily Note
-  9. Print run summary
+  8. Market research enrichment (iProperty PSF — high-priority only)
+  9. Analyst Agent (LLM investment scoring — high-priority only)
+ 10. Write today's Daily Note
 
 Environment variables (set by GitHub Actions or locally):
   VAULT_PATH        path to vault/Properties (default: ../vault/Properties)
@@ -18,6 +19,8 @@ Environment variables (set by GitHub Actions or locally):
   KNOWN_IDS_PATH    path to known_ids.json    (default: known_ids.json)
   SCRAPE_STATES     comma-separated list of states to scrape (default: all)
   MAX_PAGES         hard page cap per state (default: unlimited)
+  OPENAI_API_KEY    OpenAI API key for Analyst Agent (optional)
+  ANALYST_MODEL     model to use (default: gpt-4o-mini)
 """
 
 import json
@@ -60,6 +63,7 @@ MARKET_CACHE_PATH = os.environ.get(
 )
 # Set RUN_MARKET=1 to force-run market research stage (default: auto, skip if cache fresh)
 RUN_MARKET = os.environ.get("RUN_MARKET", "auto").strip().lower()
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # ── Imports (local modules) ───────────────────────────────────────────────────
 
@@ -70,6 +74,7 @@ from dedup_merger import cross_reference, detect_reauction, compute_derived_fiel
 from geocode import Geocoder
 from md_writer import MDWriter, write_daily_note
 from market_research import MarketResearcher
+from analyst_agent import AnalystAgent
 
 
 # ── Known IDs helpers ─────────────────────────────────────────────────────────
@@ -233,8 +238,35 @@ def run():
         print(f"  [market] Stage error: {exc}")
         import traceback; traceback.print_exc()
 
-    # ── Stage 9: Daily Note ───────────────────────────────────────────────────
-    print("\n[Stage 9] Writing daily note...")
+    # ── Stage 9: Analyst Agent ───────────────────────────────────────────
+    print("\n[Stage 9] Analyst Agent (LLM investment scoring)...")
+    agent_enriched = 0
+    agent_skipped  = 0
+    try:
+        analyst = AnalystAgent(api_key=OPENAI_API_KEY)
+        if analyst.available:
+            agent_enriched, agent_skipped = analyst.enrich_listings(enrichable)
+            print(f"  {agent_enriched} properties scored by AI analyst")
+            print(f"  {agent_skipped} properties skipped (low priority or no API key)")
+
+            # Re-write notes that received agent recommendations
+            agent_written = 0
+            for listing in enrichable:
+                if listing.get("agent_recommendation"):
+                    try:
+                        writer.write(listing, "update_price")
+                        agent_written += 1
+                    except Exception as exc:
+                        print(f"  [agent write] ERROR {listing.get('listing_id')}: {exc}")
+            print(f"  {agent_written} notes updated with AI recommendation")
+        else:
+            print("  Analyst Agent skipped (OPENAI_API_KEY not set)")
+    except Exception as exc:
+        print(f"  [analyst] Stage error: {exc}")
+        import traceback; traceback.print_exc()
+
+    # ── Stage 10: Daily Note ─────────────────────────────────────────
+    print("\n[Stage 10] Writing daily note...")
     try:
         write_daily_note(DAILY_NOTES_PATH, TEMPLATES_PATH)
     except Exception as exc:
@@ -251,6 +283,7 @@ def run():
     print(f"  New rounds       : {actions['new_round']}")
     print(f"  Notes written    : {written}")
     print(f"  Market enriched  : {market_enriched}")
+    print(f"  Agent scored     : {agent_enriched}")
     print(f"  Total vault size : {len(all_known)} known IDs")
     print(f"{'='*60}\n")
 
