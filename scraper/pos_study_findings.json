@@ -1,0 +1,236 @@
+{
+  "corpus_size": 57,
+  "field_coverage_pct": {
+    "strata_parcel": 100.0,
+    "reserve_price": 100.0,
+    "lawyer_firm": 100.0,
+    "auction_date": 100.0,
+    "tenure_leasehold": 98.2,
+    "bank_plaintif": 93.0,
+    "land_area": 87.7,
+    "mukim_district": 86.0,
+    "borrower_defendan": 86.0,
+    "tenure_freehold": 77.2,
+    "built_up_sqft": 5.3
+  },
+  "missing_pct": {
+    "bedrooms": 100.0,
+    "bathrooms": 100.0,
+    "built_up_sqft": 94.7,
+    "land_area": 12.3,
+    "tenure_freehold": 22.8,
+    "tenure_leasehold": 1.8,
+    "strata_parcel": 0.0,
+    "mukim_district": 14.0,
+    "bank_plaintif": 7.0,
+    "borrower_defendan": 14.0,
+    "case_no": 100.0,
+    "reserve_price": 0.0,
+    "lawyer_firm": 0.0,
+    "auction_date": 0.0
+  },
+  "format_distribution": {
+    "bilingual": 57,
+    "elelong_court": 48,
+    "hartanah_seksyen": 48,
+    "english_only": 9,
+    "signed_sealed": 8,
+    "bidnow_laca": 5,
+    "jual_beli": 4
+  },
+  "bedroom_patterns": {},
+  "bathroom_patterns": {},
+  "reserve_price_patterns": {
+    "harga rizab sebanyak RM 480,000.00": 3,
+    "harga rizab sebanyak RM 247,860.00": 2,
+    "harga rizab sebanyak RM 340,000.00": 2,
+    "harga rizab sebanyak RM 550,000.00": 2,
+    "harga rizab sebanyak RM 270,000.00": 2,
+    "harga rizab sebanyak RM 180,000.00": 2,
+    "harga rizab sebanyak RM 533,000.00": 1,
+    "harga rizab sebanyak RM 592,000.00": 1,
+    "harga rizab sebanyak RM 657,000.00": 1,
+    "harga rizab sebanyak RM 730,000.00": 1,
+    "harga rizab sebanyak RM 275,400.00": 1,
+    "harga rizab sebanyak RM 306,000.00": 1,
+    "harga rizab sebanyak RM153,900.00": 1,
+    "harga rizab sebanyak RM171,000.00": 1,
+    "harga rizab sebanyak RM190,000.00": 1,
+    "harga rizab sebanyak RM 388,800.00": 1,
+    "harga rizab sebanyak RM 432,000.00": 1,
+    "harga rizab sebanyak RM 214,650.00": 1,
+    "harga rizab sebanyak RM 238,500.00": 1,
+    "harga rizab sebanyak RM 265,000.00": 1
+  },
+  "tenure_patterns": {
+    "Hakmilik Kekal": 36,
+    "Freehold": 8
+  },
+  "case_no_prefixes": {
+    "PA": 26,
+    "AA": 6,
+    "JA": 5,
+    "BA": 2,
+    "JB": 2,
+    "WA": 2,
+    "DA": 1,
+    "MA": 1,
+    "KB": 1,
+    "CA": 1,
+    "AB": 1
+  },
+  "typo_catalogue": {
+    "keluasan": {
+      "angunan : keluasan tanah : 1": 30,
+      "angunan : keluasan tanah : 8": 6,
+      "pinang keluasan: lebih k": 4,
+      "adan, dan keluasan hartanah": 4,
+      "dan/atau keluasan hartana": 4,
+      "- / - / - keluasan tanah : 1": 3,
+      "u pinang keluasan lantai": 1,
+      "anggaran keluasan lantai :": 1,
+      "u pinang keluasan tanah : 1": 1,
+      "pinang keluasan: lebih ku": 1
+    },
+    "plaintif": {
+      "atas nama plaintif selewat-l": 48,
+      "lelongan, plaintif hendaklah": 48,
+      "ii) pihak plaintif tidak aka": 48,
+      "guam cara plaintif secara s": 46,
+      "daripada plaintif menyerah": 46,
+      "pas oleh plaintif bagi menj": 46,
+      "n kepada plaintif setelah d": 46,
+      "jaya. (b) plaintif dan pembi": 45,
+      "akaun (a) plaintif hendaklah": 45,
+      "maka: (i) plaintif hendaklah": 45
+    },
+    "hakmilik": {
+      "at carian hakmilik secara r": 47,
+      "tir-butir hakmilik: no. hakm": 45,
+      "egangan : hakmilik kekal no.": 25,
+      "dokumen hakmilik keluaran": 6,
+      "egangan : hakmilik pajakan n": 6,
+      "geran no. hakmilik 92228, no": 5,
+      "ilik: no. hakmilik : geran n": 5,
+      "geran no. hakmilik 92228 no.": 5,
+      "ilik: no. hakmilik : geran 8": 5,
+      "at carian hakmilik (secara r": 5
+    },
+    "pajakan": {
+      "u pemberi pajakan (jika gad": 48,
+      "n ke atas pajakan) dan apa-": 48,
+      "isemen, pajakan, gadaian": 12,
+      "hakmilik pajakan no. petak": 6,
+      "r, pajak, pajakan kecil ata": 5,
+      "tenansi, pajakan, penghun": 4,
+      "a beli, pajakan atau ju": 4,
+      "ang sama, pajakan, penyewaa": 3,
+      "ual beli, pajakan atau jual": 3,
+      ", isemen, pajakan, gadaian,": 3
+    },
+    "pemilik berdaftar": {
+      "r persegi pemilik berdaftar : lim swe": 10,
+      "r persegi pemilik berdaftar : mohd sh": 10,
+      "r persegi pemilik berdaftar : muhamma": 10,
+      "r persegi pemilik berdaftar : mohamad": 8,
+      "r persegi pemilik berdaftar : norzain": 6,
+      "r persegi pemilik berdaftar : krishna": 6,
+      "r persegi pemilik berdaftar : hoh jie": 4,
+      "47508-t) pemilik berdaftar : azahar": 2,
+      "r persegi pemilik berdaftar : nor ama": 2,
+      "r persegi pemilik berdaftar : divyan": 2
+    }
+  },
+  "cooccurrence": {
+    "has_built_up": "2/57 (4%)",
+    "has_land_area": "47/57 (82%)",
+    "has_bank": "55/57 (96%)",
+    "has_bedroom": "0/57 (0%)"
+  },
+  "field_snippets": {
+    "land_area": [
+      "k/No. Tingkat/No. \nBangunan :\nKeluasan Tanah : 1400.0000000000 kaki perseg",
+      "k/No. Tingkat/No. \nBangunan :\nKeluasan Tanah : 1400.0000000000 kaki perseg",
+      "k/No. Tingkat/No. \nBangunan :\nKeluasan Tanah : 1400.0000000000 kaki perseg",
+      "k/No. Tingkat/No. \nBangunan :\nKeluasan Tanah : 1400.0000000000 kaki perseg",
+      "k/No. Tingkat/No. \nBangunan :\nKeluasan Tanah : 1400.0000000000 kaki perseg"
+    ],
+    "tenure_freehold": [
+      "ia eFILING portal\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBa",
+      "ia eFILING portal\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBa",
+      "ia eFILING portal\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBa",
+      "ia eFILING portal\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBa",
+      "ia eFILING portal\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBa"
+    ],
+    "tenure_leasehold": [
+      "Berkuasa Negeri atau pemberi pajakan (jika gadaian yang \nberkenaan",
+      "kenaan adalah gadaian ke atas pajakan) dan apa-apa \nbayaran lain ya",
+      "Berkuasa Negeri atau pemberi pajakan (jika gadaian yang \nberkenaan",
+      "kenaan adalah gadaian ke atas pajakan) dan apa-apa \nbayaran lain ya",
+      "Berkuasa Negeri atau pemberi pajakan (jika gadaian yang \nberkenaan",
+      "kenaan adalah gadaian ke atas pajakan) dan apa-apa \nbayaran lain ya"
+    ],
+    "strata_parcel": [
+      "al\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nK",
+      "an : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nKeluasan Tana",
+      "al\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nK",
+      "an : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nKeluasan Tana",
+      "al\n\nPegangan : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nK",
+      "an : Hakmilik Kekal\nNo. Petak/No. Tingkat/No. \nBangunan :\nKeluasan Tana"
+    ],
+    "mukim_district": [
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat Daya / P",
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat D",
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat Daya / P",
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat D",
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat Daya / P",
+      "92228\nNo. Lot : No. Lot 2111\nMukim / Daerah / Negeri : 6 / Barat D"
+    ],
+    "bank_plaintif": [
+      ". Syarikat : 295400-W)\n. . .  PLAINTIF\nDAN\nLim Swee Ming (Si Bankrap",
+      "am bentuk bank draf atas nama Plaintif selewat-lewatnya \nsatu (1) ha",
+      ". Syarikat : 295400-W)\n. . .  PLAINTIF\nDAN\nLim Swee Ming (Si Bankrap",
+      "am bentuk bank draf atas nama Plaintif selewat-lewatnya \nsatu (1) ha",
+      ". Syarikat : 295400-W)\n. . .  PLAINTIF\nDAN\nLim Swee Ming (Si Bankrap",
+      "am bentuk bank draf atas nama Plaintif selewat-lewatnya \nsatu (1) ha"
+    ],
+    "borrower_defendan": [
+      "genalan : 650503035104)\n. . . DEFENDAN\nMenurut Perintah Mahkamah Tin",
+      "amad bagi penjualan \nhartanah Defendan kepada Pembida yang berjaya.",
+      "genalan : 650503035104)\n. . . DEFENDAN\nMenurut Perintah Mahkamah Tin",
+      "amad bagi penjualan \nhartanah Defendan kepada Pembida yang berjaya.",
+      "genalan : 650503035104)\n. . . DEFENDAN\nMenurut Perintah Mahkamah Tin",
+      "amad bagi penjualan \nhartanah Defendan kepada Pembida yang berjaya."
+    ],
+    "reserve_price": [
+      ", Balik Pulau, \nPulau Pinang.\nHARGA RIZAB :\nHartanah tersebut akan diju",
+      "a ada” tertakluk kepada satu \nharga rizab sebanyak RM 480,000.00 (RINGG",
+      ", Balik Pulau, \nPulau Pinang.\nHARGA RIZAB :\nHartanah tersebut akan diju",
+      "a ada” tertakluk kepada satu \nharga rizab sebanyak RM 533,000.00 (RINGG",
+      ", Balik Pulau, Pulau \nPinang.\nHARGA RIZAB :\nHartanah tersebut akan diju",
+      "a ada” tertakluk kepada satu \nharga rizab sebanyak RM 592,000.00 (RINGG"
+    ],
+    "lawyer_firm": [
+      "document via eFILING portal\n\nFirma Guaman :    ZAID IBRAHIM & CO.\nAlama",
+      "erjaya akan diserahkan kepada Peguam cara Plaintif secara \nserahan tang",
+      "document via eFILING portal\n\nFirma Guaman :    ZAID IBRAHIM & CO.\nAlama",
+      "erjaya akan diserahkan kepada Peguam cara Plaintif secara \nserahan tang",
+      "document via eFILING portal\n\nFirma Guaman :    ZAID IBRAHIM & CO.\nAlama",
+      "erjaya akan diserahkan kepada Peguam cara Plaintif secara \nserahan tang"
+    ],
+    "auction_date": [
+      "us dua \npuluh (120) hari dari tarikh jualan. Untuk butir-butir selanjutny",
+      "us dua puluh (120) hari dari \ntarikh jualan, maka:\n(i) Plaintif hendaklah",
+      "tus dua puluh (120) hari dari tarikh jualan. Untuk butir-butir selanjutny",
+      "us dua puluh (120) hari dari \ntarikh jualan, maka:\n(i) Plaintif hendaklah",
+      "tus dua puluh (120) hari dari tarikh jualan. Untuk butir-butir selanjutny",
+      "us dua puluh (120) hari dari \ntarikh jualan, maka:\n(i) Plaintif hendaklah"
+    ],
+    "built_up_sqft": [
+      "i Utara, Negeri Pulau Pinang \nKELUASAN LANTAI   : 57 meter persegi  \nPEGANG",
+      "Utara, State of Pulau Pinang \nFLOOR AREA  :        57 square metres",
+      "asa 1, Pulau Pinang \nAnggaran Keluasan Lantai : 57 meter persegi  \nPegangan",
+      "TENURE : Freehold  \nLANDAREA/FLOOR AREA : 143 sq.mt  (1539 sq.ft) \nDE"
+    ]
+  }
+}

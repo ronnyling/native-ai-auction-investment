@@ -64,17 +64,59 @@ MARKET_CACHE_PATH = os.environ.get(
 # Set RUN_MARKET=1 to force-run market research stage (default: auto, skip if cache fresh)
 RUN_MARKET = os.environ.get("RUN_MARKET", "auto").strip().lower()
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+ELELONG_STATE_PATH = os.environ.get(
+    "ELELONG_STATE_PATH",
+    str(SCRIPT_DIR / "elelong_search_state.json"),
+)
 
 # ── Imports (local modules) ───────────────────────────────────────────────────
 
 from bidnow import BidNowScraper
 from bidnow_filter_enums import BIDNOW_STATES
+from elelong import ELelongScraper
 from lelongtips import LelongTipsScraper
 from dedup_merger import cross_reference, detect_reauction, compute_derived_fields
 from geocode import Geocoder
 from md_writer import MDWriter, write_daily_note
 from market_research import MarketResearcher
 from analyst_agent import AnalystAgent
+
+
+# ── Scrape health check ───────────────────────────────────────────────────────
+
+def _scrape_health_check(batch: List[Dict]) -> None:
+    """
+    Print a warning if critical ROI fields are missing in the current scrape batch.
+    Detects BidNow DOM changes early: if >60% of a batch has market_value=0 or
+    built_up_sqft=0, ROI calculations will be blank for most properties.
+    """
+    n = len(batch)
+    if n == 0:
+        return
+    no_mv   = sum(1 for l in batch if not l.get("market_value"))
+    no_sqft = sum(1 for l in batch if not l.get("built_up_sqft"))
+    pct_mv   = no_mv   / n * 100
+    pct_sqft = no_sqft / n * 100
+    WARN_THRESHOLD = 60  # % missing before we raise the alarm
+    issues: List[str] = []
+    if pct_mv   > WARN_THRESHOLD:
+        issues.append(f"market_value   missing in {no_mv}/{n} listings ({pct_mv:.0f}%)")
+    if pct_sqft > WARN_THRESHOLD:
+        issues.append(f"built_up_sqft  missing in {no_sqft}/{n} listings ({pct_sqft:.0f}%)")
+    if issues:
+        bar = "!" * 40
+        print(f"\n  {bar}")
+        print(f"  SCRAPE HEALTH WARNING")
+        for issue in issues:
+            print(f"  >> {issue}")
+        print(f"  >> BidNow DOM may have changed — ROI fields will be blank for affected listings.")
+        print(f"  >> Check bidnow.py field mappings before next production run.")
+        print(f"  {bar}\n")
+    else:
+        mv_ok   = n - no_mv
+        sqft_ok = n - no_sqft
+        print(f"  [health] batch OK  mv: {mv_ok}/{n} ({100 - pct_mv:.0f}%)  "
+              f"sqft: {sqft_ok}/{n} ({100 - pct_sqft:.0f}%)")
 
 
 # ── Known IDs helpers ─────────────────────────────────────────────────────────
@@ -94,6 +136,23 @@ def save_known_ids(ids: set):
     p = Path(KNOWN_IDS_PATH)
     with open(p, "w", encoding="utf-8") as f:
         json.dump(sorted(ids), f, indent=2)
+
+
+def load_elelong_state() -> dict:
+    p = Path(ELELONG_STATE_PATH)
+    if p.exists():
+        try:
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_elelong_state(state: dict):
+    p = Path(ELELONG_STATE_PATH)
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
@@ -121,6 +180,15 @@ def run():
     known_ids = vault_known_ids | scraper_known_ids
     print(f"  {len(known_ids)} known BidNow IDs")
 
+    # Build known e-Lelong slugs from vault (EL-* prefix notes)
+    known_el_slugs = {
+        vid for vid in vault_index if str(vid).startswith("EL-")
+    } | {
+        vid for vid in vault_index.values()
+        if isinstance(vid, str) and str(vid).startswith("EL-")
+    }
+    el_prev_state = load_elelong_state()
+
     # ── Stage 2: BidNow scrape ────────────────────────────────────────────────
     print("\n[Stage 2] BidNow scrape (all states, delta mode)...")
     bn_scraper = BidNowScraper()
@@ -136,6 +204,34 @@ def run():
         all_bn_listings.extend(listings)
 
     print(f"\n  BidNow total: {len(all_bn_listings)} listings fetched")
+
+    # ── Stage 2b: e-Lelong scrape (court order, delta) ───────────────────────
+    print("\n[Stage 2b] e-Lelong scrape (court orders, delta mode)...")
+    all_el_listings: List[Dict] = []
+    el_new_state: dict = {}
+    try:
+        el_scraper = ELelongScraper()
+        el_states = (
+            [s for s in states_to_scrape if s in ELelongScraper.__module__ or True]
+        )
+        # Map BidNow state names to e-Lelong — use the same list (they match)
+        el_states_to_scrape = [
+            s for s in states_to_scrape
+            if s in {"Kuala Lumpur", "Selangor", "Putrajaya", "Johor", "Kedah",
+                     "Kelantan", "Melaka", "Negeri Sembilan", "Pahang",
+                     "Penang", "Perak", "Perlis", "Terengganu"}
+        ] or None  # None = all e-Lelong states
+        all_el_listings, el_new_state = el_scraper.scrape_listings(
+            known_slugs=known_el_slugs,
+            prev_search_state=el_prev_state,
+            states=el_states_to_scrape,
+            max_listings=2000,
+        )
+        save_elelong_state(el_new_state)
+        print(f"  e-Lelong total: {len(all_el_listings)} new court-order listings")
+    except Exception as exc:
+        print(f"  [e-Lelong] Stage error: {exc}")
+        import traceback; traceback.print_exc()
 
     # ── Stage 3: LelongTips scrape ────────────────────────────────────────────
     print("\n[Stage 3] LelongTips scrape (all states, delta mode)...")
@@ -160,8 +256,8 @@ def run():
 
     # ── Stage 4: Cross-reference ──────────────────────────────────────────────
     print("\n[Stage 4] Cross-referencing BidNow ↔ LelongTips...")
-    merged_listings = cross_reference(all_bn_listings, all_llt_listings)
-
+    merged_listings = cross_reference(all_bn_listings, all_llt_listings)    # Append e-Lelong listings directly (no LLT cross-ref — different source)
+    merged_listings.extend(all_el_listings)
     # ── Stage 5: Re-auction detection ─────────────────────────────────────────
     print("\n[Stage 5] Re-auction detection against vault...")
     actions: Dict[str, int] = {"create": 0, "update_price": 0, "new_round": 0}
@@ -206,6 +302,10 @@ def run():
     save_known_ids(all_known)
     print(f"  {written} notes written, {errors} errors")
 
+    # ── Scrape health check ───────────────────────────────────────────────────
+    all_scraped = all_bn_listings + all_el_listings + all_llt_listings
+    _scrape_health_check(all_scraped)
+
     # ── Stage 8: Market Research (high-priority only) ────────────────────────
     print("\n[Stage 8] Market research enrichment...")
     market_enriched = 0
@@ -219,6 +319,17 @@ def run():
         # Collect enriched listings (those with market data) and re-write their notes
         enrichable = [l for _, l, _ in enriched]
         m_enriched, m_skipped = researcher.enrich_listings(enrichable)
+
+        # Batch coverage check: if > 30% of enrichable listings got no market data,
+        # the cache may be stale or incomplete — force a full rebuild and re-enrich.
+        no_data = sum(1 for l in enrichable if not l.get("market_rent_est"))
+        coverage_pct = (len(enrichable) - no_data) / len(enrichable) * 100 if enrichable else 100
+        print(f"  Market coverage: {coverage_pct:.0f}% ({len(enrichable) - no_data}/{len(enrichable)} enriched)")
+        if enrichable and no_data / len(enrichable) > 0.30:
+            print(f"  [market] >30% without data — rebuilding full cache...")
+            researcher.force_refresh()
+            m_enriched, m_skipped = researcher.enrich_listings(enrichable)
+            print(f"  [market] Post-rebuild: {m_enriched} enriched, {m_skipped} skipped")
         market_enriched = m_enriched
         market_skipped  = m_skipped
         print(f"  {m_enriched} high-priority properties enriched with market data")
@@ -276,6 +387,7 @@ def run():
     print(f"\n{'='*60}")
     print(f"  Run complete — {today}")
     print(f"  BidNow fetched   : {len(all_bn_listings)}")
+    print(f"  e-Lelong fetched : {len(all_el_listings)}")
     print(f"  LLT fetched      : {len(all_llt_listings)}")
     print(f"  LLT matched      : {sum(1 for l in merged_listings if l.get('llt_slug'))}")
     print(f"  New properties   : {actions['create']}")
@@ -285,6 +397,7 @@ def run():
     print(f"  Market enriched  : {market_enriched}")
     print(f"  Agent scored     : {agent_enriched}")
     print(f"  Total vault size : {len(all_known)} known IDs")
+    print(f"  e-Lelong new     : {len(all_el_listings)}")
     print(f"{'='*60}\n")
 
     return 0 if errors == 0 else 1

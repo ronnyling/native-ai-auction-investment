@@ -1,0 +1,267 @@
+{
+  "id": 501590682,
+  "statusCode": "ACT",
+  "typeCode": "SALE",
+  "isVerified": false,
+  "viewedLabel": "Viewed",
+  "agent": {
+    "id": 831758,
+    "agencyId": 52439,
+    "name": "Jyan Wong",
+    "isAgentVerified": false,
+    "profileUrl": "/property-agent/jyan-wong-831758/",
+    "license": "PEA 2559",
+    "hasMobilePretty": true,
+    "hasPhonePretty": true,
+    "isMobileAndPhonePrettyDifferent": false,
+    "hasLineId": false,
+    "avatar": {
+      "src": "https://img.iproperty.com.my/my-iproperty-agent/premium/120x120-fit/4gcycfaa799b-e337-46db-b497-b00954276aa9_3024x3024.jpeg",
+      "type": "circle"
+    }
+  },
+  "agency": {
+    "id": 52439,
+    "name": "FOREWARD REALTY SDN BHD [ E (1) 1909 ]"
+  },
+  "badgeText": "",
+  "availabilityInfo": "",
+  "psfText": "RM 1,361.39 psf",
+  "listingFeatures": [
+    [
+      {
+        "iconName": "bed-o",
+        "text": "1",
+        "dataAutomationId": "listing-card-v2-bedrooms"
+      },
+      {
+        "iconName": "bath-o",
+        "text": "1",
+        "dataAutomationId": "listing-card-v2-bathrooms"
+      },
+      {
+        "iconName": "car-o",
+        "text": "1",
+        "dataAutomationId": "listing-card-v2-parking-slots"
+      }
+    ],
+    {
+      "text": "808 sqft",
+      "dataAutomationId": "listing-card-v2-area"
+    },
+    {
+      "text": "Service Residence",
+      "dataAutomationId": "listing-card-v2-unit-type"
+    },
+    {
+      "text": "Intermediate",
+      "dataAutomationId": "listing-card-v2-unit-type-details"
+    },
+    {
+      "text": "Partially Furnished",
+      "dataAutomationId": "listing-card-v2-furnish"
+    }
+  ],
+  "property": {
+    "newProject": false,
+    "typeCode": "SALE",
+    "typeText": "For Sale",
+    "typeGroup": "N",
+    "subTypeText": "Service Residence",
+    "isPremiumProjectListing": false,
+    "id": 23297
+  },
+  "fullAddress": "Jalan Damanlela, Damansara Heights, Kuala Lumpur",
+  "localizedTitle": "Regent Suites @ Pavilion Damansara Heights, Damansara Heights",
+  "mediaItems": [
+    {
+      "icon": "pgicon-photo",
+      "iconName": "images-1-o",
+      "text": "6",
+      "mediaType": "images",
+      "tooltipText": "6 Photos"
+    }
+  ],
+  "mrt": {
+    "nearbyText": "",
+    "pill": {
+      "colors": []
+    }
+  },
+  "mediaControls": {
+    "hideButtonTitle": "Hide Property",
+    "shortlistButtonTitle": "Shortlist Property"
+  },
+  "mediaCarousel": {
+    "nextButtonTitle": "Next",
+    "previousButtonTitle": "Previous",
+    "previewMedia": {
+      "images": {
+        "icon": "pgicon-photo",
+        "items": [
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Living Room - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332055.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          },
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Bedroom - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332056.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          },
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Living Room - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332057.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          },
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Living Room - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332058.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          },
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Bedroom - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332059.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          },
+          {
+            "caption": "Service Residence for Sale in Regent Suites @ Pavilion Damansara Heights by Jyan Wong - Living Room - iProperty.com.my",
+            "src": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332060.V800/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg"
+          }
+        ],
+        "name": {
+          "singular": "Photo",
+          "plural": "Photos"
+        }
+      },
+      "floorPlans": {
+        "icon": "pgicon-floorplan",
+        "items": [],
+        "name": {
+          "singular": "Floor Plan",
+          "plural": "Floor Plans"
+        }
+      },
+      "sitePlans": {
+        "icon": "",
+        "items": [],
+        "name": {
+          "singular": "",
+          "plural": ""
+        }
+      },
+      "videos": {
+        "icon": "video-camera-o",
+        "items": [],
+        "name": {
+          "singular": "Live Tour",
+          "plural": "Live Tours"
+        }
+      },
+      "virtualTours": {
+        "icon": "video-clip-o",
+        "items": [],
+        "name": {
+          "singular": "Virtual Tour",
+          "plural": "Virtual Tours"
+        }
+      },
+      "heroVideos": {
+        "icon": "",
+        "items": [],
+        "name": {
+          "singular": "",
+          "plural": ""
+        }
+      }
+    }
+  },
+  "price": {
+    "value": 1100000,
+    "pretty": "RM 1,100,000",
+    "currency": "MYR",
+    "localeStringValue": "1100000"
+  },
+  "badges": [
+    {
+      "name": "unit_type",
+      "variant": "secondary",
+      "bg": "neutral",
+      "type": "small",
+      "text": "Service Residence",
+      "shouldShowIcon": false
+    },
+    {
+      "name": "tenure",
+      "variant": "secondary",
+      "bg": "neutral",
+      "type": "small",
+      "text": "Freehold",
+      "shouldShowIcon": false
+    }
+  ],
+  "url": "/property/damansara-heights/regent-suites-pavilion-damansara-heights/sale-501590682/",
+  "recency": {
+    "icon": "clock-o",
+    "iconName": "clock-circle-o",
+    "text": "Listed on Jun 24, 2026 (20m ago)"
+  },
+  "thumbnail": "https://ipp1-cdn.pgimgs.com/listing/501590682/UPHO.384332055.V550/Regent-Suites-Pavilion-Damansara-Heights-Damansara-Heights-Malaysia.jpg",
+  "typeText": "For Sale",
+  "listedByText": "Listed by",
+  "contactAgentText": "Contact Agent",
+  "isOfficialListing": true,
+  "isPrioritized": false,
+  "viewProfileText": "View Agent Profile",
+  "tracking": {
+    "refType": ""
+  },
+  "developer": "Jyan Wong",
+  "postedOn": {
+    "text": "24 Jun 2026",
+    "unix": 1782234688
+  },
+  "area": {
+    "localeStringValue": "808 sqft"
+  },
+  "pricePerArea": {
+    "localeStringValue": "RM 1,361.39 psf"
+  },
+  "developerPromotedText": "",
+  "isDeveloperListing": false,
+  "isDeveloperUnitListing": false,
+  "isPhoneOtpEnabled": true,
+  "products": {
+    "isTurboPro": false,
+    "isPremiumProjectListing": false,
+    "isPromotedListing": false,
+    "isSuperBoost": true,
+    "isTurbo": true,
+    "isRankedSpotlight": false,
+    "isBoosted": false,
+    "isBoost": false,
+    "isFeaturedListing": false,
+    "isPropertySpecialistListing": false,
+    "isSpotlight": false,
+    "isAutoRepost": false,
+    "tier": 1,
+    "isStandard": false,
+    "isFeatured": false,
+    "isPremium": false,
+    "isPrimaryBasic": false,
+    "isPrimaryGold": false,
+    "isPrimaryPlatinum": false,
+    "isDegraded": false,
+    "isRegular": false,
+    "position": 1
+  },
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "floorArea": 808,
+  "additionalData": {
+    "tenure": "F",
+    "areaText": "",
+    "areaCode": "",
+    "districtCode": "f3k46",
+    "districtText": "Damansara Heights",
+    "regionText": "Kuala Lumpur",
+    "regionCode": "58jok"
+  },
+  "externalId": "501590682",
+  "crossListingType": "ORIGINAL"
+}

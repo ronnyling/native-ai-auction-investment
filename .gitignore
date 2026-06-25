@@ -20,3 +20,4 @@ vault/.obsidian/workspace-mobile.json
 
 # Large test outputs
 *.json.bak
+*_*?.txt
