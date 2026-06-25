@@ -48,6 +48,18 @@ SCRAPE_STATES="Kuala Lumpur,Selangor" python scraper/main.py
 RUN_MARKET=1 python scraper/main.py
 ```
 
+Windows `cmd` equivalent for the environment-variable examples:
+
+```bat
+REM Specific states only
+set SCRAPE_STATES=Kuala Lumpur,Selangor && python scraper/main.py
+
+REM Force market cache refresh
+set RUN_MARKET=1 && python scraper/main.py
+```
+
+The plain `python ...` commands above are also copy-paste safe in `cmd` if Python is on `PATH`.
+
 **Environment variables:**
 
 | Variable | Default | Purpose |
@@ -314,6 +326,21 @@ When logging a beta issue, include:
 - The expected outcome versus the actual outcome.
 - The stage where the issue appeared.
 - Whether the issue is a crash, a wrong recommendation, or an explanation gap.
+
+### Obsidian Keyword Search Workflow
+
+Use Obsidian's search bar after the scraper has written notes. This is the user-facing filter layer; do not change the scraper just to add keyword search.
+
+Suggested search sequence:
+1. Search the district or city first, for example `Puchong`, `PJ`, or `Shah Alam`.
+2. Narrow by note fields in the YAML frontmatter, such as `status: interested`, `tenure: leasehold`, or `auction_type: LACA`.
+3. Add investment filters when needed, such as `bmv_pct`, `reserve_price`, or `market_value`.
+4. Open the matching note and review the property summary, risks, and report text.
+
+Fast checks:
+- Use the global search pane in Obsidian to scan the whole vault.
+- Search for the exact note state you want, for example `status: interested`.
+- Combine a location term with a field term to narrow results quickly, for example `Puchong` + `status: interested`.
 
 ---
 
