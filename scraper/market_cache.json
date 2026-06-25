@@ -1,218 +1,234 @@
 {
-  "built_at": "2026-06-24T01:47:26.165309",
+  "built_at": "2026-06-25T11:24:26.602760",
   "sale_district": {
-    "subang jaya": {
-      "median_psf": 547.16,
-      "n": 3
-    },
-    "tropicana": {
-      "median_psf": 1183.77,
-      "n": 4
-    },
-    "skudai": {
-      "median_psf": 420.44,
-      "n": 3
+    "bukit jalil": {
+      "median_psf": 622.41,
+      "n": 6
     },
     "damansara heights": {
-      "median_psf": 1427.04,
-      "n": 13
+      "median_psf": 1615.95,
+      "n": 10
+    },
+    "skudai": {
+      "median_psf": 408.88,
+      "n": 2
+    },
+    "ara damansara": {
+      "median_psf": 816.78,
+      "n": 2
+    },
+    "subang jaya": {
+      "median_psf": 772.22,
+      "n": 1
     },
     "tasek gelugor": {
       "median_psf": 292.15,
       "n": 1
     },
+    "kampung kerinchi (bangsar south)": {
+      "median_psf": 687.91,
+      "n": 1
+    },
+    "seremban": {
+      "median_psf": 249.7,
+      "n": 14
+    },
     "bangsar": {
-      "median_psf": 990.59,
-      "n": 4
-    },
-    "petaling jaya": {
-      "median_psf": 541.38,
-      "n": 4
-    },
-    "george town": {
-      "median_psf": 787.73,
-      "n": 1
-    },
-    "setia alam": {
-      "median_psf": 430.41,
-      "n": 4
-    },
-    "kl city centre": {
-      "median_psf": 1477.17,
-      "n": 17
-    },
-    "gelang patah": {
-      "median_psf": 508.34,
-      "n": 2
-    },
-    "pulau tikus": {
-      "median_psf": 1171.88,
-      "n": 1
-    },
-    "bandar kinrara": {
-      "median_psf": 495.21,
-      "n": 2
-    },
-    "jalan klang lama (old klang road)": {
-      "median_psf": 694.92,
+      "median_psf": 954.25,
       "n": 3
     },
-    "kepong": {
-      "median_psf": 657.86,
+    "rasah": {
+      "median_psf": 161.7,
       "n": 2
+    },
+    "mont kiara": {
+      "median_psf": 1070.81,
+      "n": 2
+    },
+    "kota damansara": {
+      "median_psf": 533.65,
+      "n": 2
+    },
+    "bandar sri sendayan": {
+      "median_psf": 273.47,
+      "n": 6
+    },
+    "tropicana": {
+      "median_psf": 896.85,
+      "n": 4
+    },
+    "kuala lumpur": {
+      "median_psf": 1473.68,
+      "n": 1
+    },
+    "sri hartamas": {
+      "median_psf": 899.06,
+      "n": 1
+    },
+    "batu": {
+      "median_psf": 602.62,
+      "n": 1
+    },
+    "desa parkcity": {
+      "median_psf": 2769.01,
+      "n": 2
+    },
+    "kepong": {
+      "median_psf": 464.25,
+      "n": 2
+    },
+    "bandar kinrara": {
+      "median_psf": 684.68,
+      "n": 2
+    },
+    "glenmarie": {
+      "median_psf": 748.89,
+      "n": 1
     },
     "batu kawan": {
       "median_psf": 559.54,
       "n": 1
     },
-    "iskandar puteri (nusajaya)": {
-      "median_psf": 938.5,
-      "n": 2
-    },
     "shah alam": {
-      "median_psf": 521.12,
+      "median_psf": 490.91,
+      "n": 5
+    },
+    "jalan klang lama (old klang road)": {
+      "median_psf": 620.09,
       "n": 2
     },
-    "sungai buloh": {
-      "median_psf": 904.98,
+    "port dickson": {
+      "median_psf": 264.29,
       "n": 1
     },
-    "setapak": {
-      "median_psf": 543.62,
-      "n": 2
-    },
-    "seremban": {
-      "median_psf": 267.08,
-      "n": 3
-    },
-    "alor setar": {
-      "median_psf": 274.17,
+    "gelugor": {
+      "median_psf": 658.62,
       "n": 1
     },
-    "rawang": {
-      "median_psf": 410.26,
+    "ampangan": {
+      "median_psf": 138.89,
       "n": 1
+    },
+    "seremban 2": {
+      "median_psf": 374.61,
+      "n": 4
     },
     "johor bahru": {
-      "median_psf": 845.54,
+      "median_psf": 834.57,
       "n": 2
+    },
+    "melaka city": {
+      "median_psf": 349.9,
+      "n": 1
     },
     "kuching": {
       "median_psf": 821.09,
       "n": 1
     },
+    "klang": {
+      "median_psf": 311.2,
+      "n": 4
+    },
     "kuantan": {
-      "median_psf": 533.02,
-      "n": 2
-    },
-    "puchong": {
-      "median_psf": 591.87,
-      "n": 3
-    },
-    "bandar sri damansara": {
-      "median_psf": 787.88,
+      "median_psf": 808.26,
       "n": 1
     },
-    "cheras": {
-      "median_psf": 554.28,
-      "n": 6
-    },
-    "seri kembangan": {
-      "median_psf": 281.32,
+    "petaling jaya": {
+      "median_psf": 859.51,
       "n": 1
     },
-    "port dickson": {
-      "median_psf": 217.65,
+    "nilai": {
+      "median_psf": 264.29,
       "n": 1
     },
-    "kampung kerinchi (bangsar south)": {
-      "median_psf": 186.69,
+    "sungai ara": {
+      "median_psf": 333.95,
+      "n": 1
+    },
+    "sungai gadut": {
+      "median_psf": 239.2,
       "n": 1
     },
     "kulai": {
       "median_psf": 406.52,
       "n": 1
     },
-    "sikamat": {
-      "median_psf": 206.7,
-      "n": 1
-    },
-    "desa parkcity": {
-      "median_psf": 1588.92,
-      "n": 2
-    },
     "kajang": {
       "median_psf": 486.0,
       "n": 1
     },
-    "mont kiara": {
-      "median_psf": 433.33,
+    "bukit raja": {
+      "median_psf": 490.91,
       "n": 1
     },
-    "bukit tunku (kenny hills)": {
-      "median_psf": 1533.33,
+    "dutamas": {
+      "median_psf": 815.02,
       "n": 1
     },
-    "bandar utama": {
-      "median_psf": 661.8,
+    "kl city centre": {
+      "median_psf": 1287.64,
+      "n": 3
+    },
+    "sentul": {
+      "median_psf": 558.55,
       "n": 1
     },
-    "titiwangsa": {
-      "median_psf": 610.67,
+    "kuchai lama": {
+      "median_psf": 480.83,
+      "n": 4
+    },
+    "puchong": {
+      "median_psf": 395.75,
       "n": 1
     },
-    "kota damansara": {
-      "median_psf": 690.91,
-      "n": 2
-    },
-    "bandar sungai long": {
-      "median_psf": 453.9,
+    "tanjung tokong": {
+      "median_psf": 1054.85,
       "n": 1
     },
-    "kl sentral": {
-      "median_psf": 871.67,
-      "n": 1
-    },
-    "taman tun dr ismail": {
-      "median_psf": 573.85,
+    "sri petaling": {
+      "median_psf": 700.73,
       "n": 1
     },
     "pantai": {
-      "median_psf": 872.01,
-      "n": 2
-    },
-    "bandar menjalara": {
-      "median_psf": 703.03,
+      "median_psf": 1144.02,
       "n": 1
     },
-    "mid valley city": {
-      "median_psf": 839.27,
+    "jelutong": {
+      "median_psf": 611.11,
+      "n": 1
+    },
+    "seputeh": {
+      "median_psf": 1428.57,
+      "n": 1
+    },
+    "iskandar puteri (nusajaya)": {
+      "median_psf": 547.79,
       "n": 1
     }
   },
   "sale_state": {
-    "selangor": {
-      "median_psf": 554.28,
-      "n": 36
+    "kuala lumpur": {
+      "median_psf": 815.02,
+      "n": 43
     },
     "johor": {
-      "median_psf": 512.15,
-      "n": 10
+      "median_psf": 481.07,
+      "n": 6
     },
-    "kuala lumpur": {
-      "median_psf": 1134.51,
-      "n": 54
+    "selangor": {
+      "median_psf": 666.0,
+      "n": 25
     },
     "penang": {
-      "median_psf": 673.63,
-      "n": 4
+      "median_psf": 585.33,
+      "n": 6
     },
     "negeri sembilan": {
-      "median_psf": 217.65,
-      "n": 5
+      "median_psf": 264.29,
+      "n": 30
     },
-    "kedah": {
-      "median_psf": 274.17,
+    "melaka": {
+      "median_psf": 349.9,
       "n": 1
     },
     "sarawak": {
@@ -220,164 +236,148 @@
       "n": 1
     },
     "pahang": {
-      "median_psf": 533.02,
-      "n": 2
+      "median_psf": 808.26,
+      "n": 1
     }
   },
   "rent_district": {
-    "desa parkcity": {
-      "median_rent_psf": 5.71,
+    "mont kiara": {
+      "median_rent_psf": 4.76,
+      "n": 15
+    },
+    "bukit jalil": {
+      "median_rent_psf": 3.52,
       "n": 4
     },
-    "jalan kuching": {
-      "median_rent_psf": 2.71,
+    "tanjung tokong": {
+      "median_rent_psf": 2.59,
+      "n": 3
+    },
+    "kota damansara": {
+      "median_rent_psf": 4.34,
+      "n": 1
+    },
+    "damansara heights": {
+      "median_rent_psf": 7.01,
+      "n": 7
+    },
+    "bangsar": {
+      "median_rent_psf": 5.27,
       "n": 2
     },
     "kl city centre": {
-      "median_rent_psf": 5.21,
-      "n": 15
-    },
-    "damansara heights": {
-      "median_rent_psf": 7.47,
-      "n": 11
-    },
-    "petaling jaya": {
-      "median_rent_psf": 3.17,
-      "n": 6
-    },
-    "taman tun dr ismail": {
-      "median_rent_psf": 3.24,
-      "n": 1
-    },
-    "bukit jalil": {
-      "median_rent_psf": 3.55,
-      "n": 2
-    },
-    "damansara perdana": {
-      "median_rent_psf": 4.39,
-      "n": 1
+      "median_rent_psf": 5.19,
+      "n": 9
     },
     "jalan klang lama (old klang road)": {
-      "median_rent_psf": 3.39,
-      "n": 4
-    },
-    "dutamas": {
-      "median_rent_psf": 4.51,
-      "n": 4
-    },
-    "segambut": {
-      "median_rent_psf": 2.84,
-      "n": 6
-    },
-    "subang jaya": {
-      "median_rent_psf": 3.85,
-      "n": 3
-    },
-    "kampung kerinchi (bangsar south)": {
-      "median_rent_psf": 4.5,
-      "n": 3
-    },
-    "rawang": {
-      "median_rent_psf": 1.23,
-      "n": 1
-    },
-    "iskandar puteri (nusajaya)": {
-      "median_rent_psf": 2.67,
-      "n": 2
-    },
-    "setia alam": {
-      "median_rent_psf": 2.8,
-      "n": 5
-    },
-    "batu kawan": {
-      "median_rent_psf": 2.14,
-      "n": 1
-    },
-    "tropicana": {
-      "median_rent_psf": 2.85,
-      "n": 1
-    },
-    "seputeh": {
-      "median_rent_psf": 3.28,
-      "n": 1
-    },
-    "sunway": {
-      "median_rent_psf": 7.29,
+      "median_rent_psf": 3.55,
       "n": 3
     },
     "cheras": {
-      "median_rent_psf": 5.88,
-      "n": 7
+      "median_rent_psf": 6.64,
+      "n": 4
     },
-    "gurney drive": {
-      "median_rent_psf": 2.62,
-      "n": 1
-    },
-    "klang": {
-      "median_rent_psf": 3.0,
-      "n": 1
-    },
-    "bangsar": {
-      "median_rent_psf": 5.0,
+    "bukit tunku (kenny hills)": {
+      "median_rent_psf": 3.66,
       "n": 3
     },
-    "setapak": {
-      "median_rent_psf": 2.53,
+    "kampung kerinchi (bangsar south)": {
+      "median_rent_psf": 3.28,
+      "n": 5
+    },
+    "kl sentral": {
+      "median_rent_psf": 4.06,
       "n": 2
     },
-    "kepong": {
-      "median_rent_psf": 3.16,
+    "shah alam": {
+      "median_rent_psf": 3.38,
+      "n": 2
+    },
+    "batu caves": {
+      "median_rent_psf": 2.3,
+      "n": 4
+    },
+    "setia alam": {
+      "median_rent_psf": 1.47,
+      "n": 4
+    },
+    "segambut": {
+      "median_rent_psf": 4.96,
       "n": 1
     },
-    "wangsa maju": {
-      "median_rent_psf": 3.39,
+    "sentul": {
+      "median_rent_psf": 2.12,
       "n": 1
     },
-    "keramat": {
-      "median_rent_psf": 5.71,
-      "n": 1
+    "cyberjaya": {
+      "median_rent_psf": 2.1,
+      "n": 2
     },
     "johor bahru": {
-      "median_rent_psf": 1.33,
-      "n": 1
+      "median_rent_psf": 3.13,
+      "n": 4
     },
-    "shah alam": {
-      "median_rent_psf": 1.67,
-      "n": 1
+    "iskandar puteri (nusajaya)": {
+      "median_rent_psf": 3.63,
+      "n": 2
     },
-    "ara damansara": {
-      "median_rent_psf": 2.53,
+    "petaling jaya": {
+      "median_rent_psf": 2.67,
+      "n": 3
+    },
+    "batu kawan": {
+      "median_rent_psf": 2.05,
       "n": 1
     },
     "puchong": {
-      "median_rent_psf": 2.73,
+      "median_rent_psf": 1.44,
+      "n": 2
+    },
+    "pantai": {
+      "median_rent_psf": 3.76,
+      "n": 4
+    },
+    "dengkil": {
+      "median_rent_psf": 4.19,
       "n": 1
     },
-    "kl sentral": {
-      "median_rent_psf": 4.62,
+    "subang jaya": {
+      "median_rent_psf": 3.03,
+      "n": 2
+    },
+    "seri kembangan": {
+      "median_rent_psf": 2.5,
+      "n": 3
+    },
+    "seputeh": {
+      "median_rent_psf": 3.62,
       "n": 1
     },
-    "kl eco city": {
-      "median_rent_psf": 4.59,
+    "titiwangsa": {
+      "median_rent_psf": 3.75,
+      "n": 1
+    },
+    "damansara perdana": {
+      "median_rent_psf": 2.89,
       "n": 1
     }
   },
   "rent_state": {
     "kuala lumpur": {
-      "median_rent_psf": 4.6,
-      "n": 70
-    },
-    "selangor": {
-      "median_rent_psf": 2.99,
-      "n": 24
-    },
-    "johor": {
-      "median_rent_psf": 2.12,
-      "n": 3
+      "median_rent_psf": 4.44,
+      "n": 65
     },
     "penang": {
-      "median_rent_psf": 2.38,
-      "n": 2
+      "median_rent_psf": 2.47,
+      "n": 4
+    },
+    "selangor": {
+      "median_rent_psf": 2.67,
+      "n": 22
+    },
+    "johor": {
+      "median_rent_psf": 3.13,
+      "n": 6
     }
   }
 }

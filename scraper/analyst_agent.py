@@ -161,7 +161,37 @@ def _build_prompt(listing: Dict, entry_cost: Dict = None, competition: Dict = No
             + (f" | Median asking RM {med_a:,.0f}" if med_a else "")
         )
 
+    if r > 0 and mv > 0:
+        ratio = mv / r
+        if ratio > 2.5:
+            lines.append(
+                "Plausibility check: High-risk assumption - market value appears unusually high "
+                f"relative to reserve ({ratio:.1f}x)."
+            )
+
     return "\n".join(lines)
+
+
+def _high_risk_assumption_flag(listing: Dict) -> Optional[str]:
+    reserve = float(listing.get("reserve_price") or 0)
+    market_value = float(listing.get("market_value") or listing.get("market_value_est") or 0)
+    if reserve > 0 and market_value > 0:
+        ratio = market_value / reserve
+        if ratio > 2.5:
+            return (
+                "High-risk assumption - market value appears unusually high relative to reserve "
+                f"({ratio:.1f}x)"
+            )
+    return None
+
+
+def _append_guardrail_risk(existing: str, listing: Dict) -> str:
+    guardrail = _high_risk_assumption_flag(listing)
+    if not guardrail:
+        return existing
+    if guardrail in existing:
+        return existing
+    return f"{existing}, {guardrail}" if existing else guardrail
 
 
 # ── Rule-based fallback (no OpenAI API key) ───────────────────────────────────
@@ -218,12 +248,17 @@ def _score_rule_based(listing: Dict) -> Dict:
         exit_strat, hold_period = "long_hold", "5+ years"
 
     risks = []
+    if float(listing.get("market_value") or listing.get("market_value_est") or 0) > 0 or yld > 0:
+        risks.append("Market value and rental yield are source estimates — verify independently")
     if rnd >= 3:
         risks.append(f"Round {rnd} — possible title or occupancy issue")
     if "leasehold" in tenure:
         risks.append("Leasehold — check years remaining and mortgageability")
     if bmv <= 10:
         risks.append("Low discount — limited margin of safety")
+    high_risk_assumption = _high_risk_assumption_flag(listing)
+    if high_risk_assumption:
+        risks.append(high_risk_assumption)
     if not risks:
         risks.append("Verify physical condition and occupancy before bidding")
 
@@ -324,7 +359,7 @@ class AnalystAgent:
                 "agent_reasoning":        str(data.get("reasoning", ""))[:500],
                 "agent_exit_strategy":    exit_s,
                 "agent_holding_period":   str(data.get("holding_period", ""))[:30],
-                "agent_key_risks":        str(data.get("key_risks", ""))[:300],
+                "agent_key_risks":        _append_guardrail_risk(str(data.get("key_risks", ""))[:300], listing),
                 "agent_due_diligence":    str(data.get("due_diligence_flags", ""))[:300],
                 "agent_run_date":         str(date.today()),
                 "agent_mode":             "llm",

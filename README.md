@@ -20,8 +20,14 @@ native ai auction investment/
 │   ├── dedup_merger.py ← Cross-source dedup + re-auction detection
 │   ├── geocode.py      ← Nominatim geocoder
 │   ├── md_writer.py    ← Vault note writer (Obsidian Markdown + YAML)
-│   ├── audit.py        ← 156-scenario regression audit
-│   └── vault_scan.py   ← Vault data quality scanner
+│   ├── audit.py        ← ~204-scenario regression audit (13 categories)
+│   ├── vault_scan.py   ← Vault data quality scanner
+│   ├── pos_parser.py   ← POS (Proclamation of Sale) PDF field extractor
+│   ├── pos_regression.py     ← 157-PDF regression suite for POS parser
+│   ├── pos_bulk_download.py  ← Batch POS PDF downloader
+│   ├── pos_identifier.py     ← Match listing IDs to POS PDFs
+│   ├── hermes.py       ← AI field enrichment from POS text
+│   └── pdf_extractor.py      ← Raw text extraction from PDFs
 └── vault/
     ├── Properties/     ← bn-*.md / el-*.md notes (1 per property)
     └── Daily Notes/    ← Daily run summaries
@@ -63,12 +69,48 @@ python scraper/e2e_due_diligence.py --state "Kuala Lumpur"
 
 # Options
 --bn-pages 2        # BidNow pages to scrape (default: 3)
---el-pages 1        # e-Lelong pages (default: 1)
+--el-pages 1        # e-Lelong pages (default: 1; set 0 to skip entirely)
+--district Puchong  # Filter listings by district/city name (substring match)
 --reno light        # Reno level: light | medium | heavy
 --auto              # Non-interactive (CI/test mode)
 ```
 
-The e2e flow always fetches a fresh iProperty market cache (if not already built today) before computing rental yields — so rental benchmarks are never stale when evaluating a deal.
+Auto-selection logic: residential types are always preferred over commercial types (shops, offices, industrial). Within residential, higher BMV% is ranked first. Commercial listings are included in the scrape output but skipped in market comparison — iProperty PSF benchmarks are residential-only.
+
+---
+
+## POS Pipeline
+
+The Proclamation of Sale (POS) is the legal document attached to each auction listing. It is the primary source of ground-truth field data: borrower identity, encumbrances, tenure, exact address, and precise reserve price.
+
+**Extracted fields (8 essential):**
+
+| Field | Description |
+|---|---|
+| `bank` | Plaintiff bank name |
+| `borrower` | Named borrower(s) / assignor(s) |
+| `reserve_price_rm` | Reserve price as stated in POS |
+| `deposit_required_rm` | Deposit amount |
+| `disbursement_days` | Days to settle balance |
+| `encumbrances` | Nil / specific encumbrances listed |
+| `location` | Full property address as per title |
+| `tenure` | Freehold / Leasehold + expiry |
+
+**Coverage (as of June 2026):** 121 / 157 PDFs = **77.1%** all-field extraction across the regression suite.
+
+**Running the regression:**
+
+```bash
+python scraper/pos_regression.py   # runs against local PDF corpus
+```
+
+**Running the unit tests:**
+
+```bash
+python scraper/audit.py --cat 12   # 39 POS parser tests
+```
+
+**Known POS extraction gaps** (see [Known Gaps](#known-gaps)).
 
 ---
 
@@ -204,12 +246,104 @@ A scrape health check runs automatically after each `main.py` run and warns if >
 ## Audit
 
 ```bash
-python scraper/audit.py              # full 156-scenario audit
+python scraper/audit.py              # full ~204-scenario audit
 python scraper/audit.py --skip-net  # unit tests only (no network)
 python scraper/audit.py --cat 2,11  # specific categories
 ```
 
-Current baseline: **155 PASS, 0 FAIL, 1 WARN** (156 scenarios across 11 categories).
+Current baseline: **~204 PASS, 0 FAIL** (204 scenarios across 13 categories).
+
+Category 12 (POS Parser): 39/39 PASS.
+
+---
+
+## Beta Tester Guide
+
+Beta Mode Objective: simulate real user decision-making, not internal validation.
+
+Execution Rule:
+- Run scenarios sequentially.
+- Stop immediately on the first failure.
+- Fix the root cause before continuing.
+- Rerun the same scenario after a fix before widening scope.
+
+What to capture on every run:
+- Command used.
+- State, district, page counts, and whether e-Lelong was skipped.
+- Selected listing ID, property type, and district/city.
+- Final user outcome: `SHORTLIST`, `REVIEW`, `REJECT`, or `CONFIDENT SHORTLIST`.
+- Key risks, assumption warnings, and whether the explanation is clear.
+
+### Flow To Follow
+
+1. Scraping - confirm the batch is not empty and the district filter matches the target area.
+2. Property Selection - confirm residential listings are preferred over commercial when both exist.
+3. Property Details - confirm reserve price, market value, tenure, and location print correctly.
+4. POS Check - confirm POS status, POS URL, and extracted fields appear when available.
+5. Market Comparison - confirm residential benchmarks are used; commercial should show `N/A`.
+6. Entry Cost Estimate - confirm exit price compounds from market value when present, not reserve price.
+7. Investment Analysis - confirm the final recommendation matches the score and the key risks are explicit.
+8. Explanation Check - confirm a human can understand why the property was chosen and which assumptions were used.
+
+### Suggested Beta Scenarios
+
+| # | Scenario | What it proves | Expected user outcome |
+|---|---|---|---|
+| 1 | Puchong residential happy path | District filter, residential selection, and full report flow work end to end | `SHORTLIST` or `REVIEW` |
+| 2 | District ambiguity check | District filtering is token-based and does not collapse to the full state | `REVIEW` if the match is fuzzy |
+| 3 | Commercial guardrail | Commercial listings do not outrank residential ones | `REJECT` for commercial-only candidates |
+| 4 | Missing-data fallback | Sparse listings still produce a usable report without crashing | `REVIEW` |
+| 5 | High-volume stress run | The pipeline stays responsive with a wider scrape batch | `REVIEW` or better if stable |
+| 6 | Misleading ROI detection | Inflated market-value assumptions trigger a visible warning | `REVIEW` or `REJECT` |
+| 7 | Repeatability check | The same inputs produce the same selection and recommendation | `CONFIDENT SHORTLIST` if stable |
+| 8 | Explanation clarity check | The report explains selection, ROI, and assumptions clearly | `CONFIDENT SHORTLIST` or `REVIEW` |
+
+### Pass Criteria
+
+- No hangs or silent stalls.
+- No commercial listing is treated as better residential stock when residential options exist.
+- High market value vs reserve triggers a visible high-risk assumption warning.
+- Repeated runs stay stable unless the live source data changes.
+- The final report explains the recommendation, the ROI basis, and the main risks.
+
+### Reporting Guidance
+
+When logging a beta issue, include:
+- The exact command used.
+- The selected listing ID and a short description.
+- The expected outcome versus the actual outcome.
+- The stage where the issue appeared.
+- Whether the issue is a crash, a wrong recommendation, or an explanation gap.
+
+---
+
+## Known Gaps
+
+Distinguishes between **not yet implemented** (fixable) and **structurally hard** (pattern variance in source documents).
+
+| Field | Gap | Type |
+|---|---|---|
+| `encumbrances` | Johor LACA deeds encode encumbrances differently from Peninsular court-order format; not yet handled | Not yet built |
+| `bank` | Some PDFs list the bank inline with the address block instead of in a named section; regex misses these | Structurally hard (pattern variance) |
+| `location` | Multi-lot properties (e.g. "Lot 1234 and Lot 5678") only capture the first lot | Not yet built |
+| `tenure` | Some PDFs omit leasehold expiry year; tenure extracted as "Leasehold" without expiry date | Structurally hard (data absent in source) |
+| `borrower` | PDFs with no heading label (bare name blocks) — parser cannot distinguish borrower from address | Structurally hard |
+| e-Lelong | Hangs on high-volume state scrapes (Selangor: 1,255 results) — set `--el-pages 0` to skip | Not yet built (pagination throttle needed) |
+| iProperty market cache | Returns `None` for areas not covered by iProperty listings (rural / low-density districts) | Structurally hard (no data source) |
+
+---
+
+## Pending Work
+
+| Item | What's needed | Priority |
+|---|---|---|
+| POS encumbrance — Johor LACA | Map Johor LACA deed format to `encumbrances` field | P2 |
+| POS multi-lot location | Capture all lot numbers when multiple lots are described | P2 |
+| e-Lelong pagination throttle | Add rate limiting + page cap to prevent hangs on high-volume states | P2 |
+| Bedroom count from POS | Parse bedroom count out of POS description; currently falls back to sqft estimate | P2 |
+| Analyst agent (LLM) | OpenAI GPT-4o-mini path present but disabled without API key; rule-based fallback always active | P3 |
+| Vault stale-note cleanup | Properties past auction date are flagged but not auto-archived | P3 |
+| Full-text POS search | Index all POS PDFs for keyword search (occupancy issues, access disputes) | P3 |
 
 ---
 
@@ -219,4 +353,4 @@ Current baseline: **155 PASS, 0 FAIL, 1 WARN** (156 scenarios across 11 categori
 pip install -r scraper/requirements.txt
 ```
 
-Python 3.11+. Optional: `OPENAI_API_KEY` for GPT-4o-mini analyst scoring.
+Python 3.14. Optional: `OPENAI_API_KEY` for GPT-4o-mini analyst scoring.

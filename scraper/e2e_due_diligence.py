@@ -24,8 +24,9 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# UTF-8 output (Windows console compatibility)
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+# UTF-8 output (Windows console compatibility) — line_buffering ensures
+# output is visible progressively in both TTY and piped/redirected contexts.
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
 
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -93,6 +94,13 @@ LANDED_TYPES = {
     "terrace-link-house", "semi-detached-house", "bungalow",
 }
 
+# Commercial property types — deprioritised in auto-selection; iProperty
+# residential benchmarks are not applicable to these.
+COMMERCIAL_TYPES = {
+    "shop", "office", "retail", "shopoffice", "shop-office",
+    "industrial", "factory", "warehouse", "commercial",
+}
+
 # Monthly maintenance estimate by property type (for net yield calc)
 MAINTENANCE_EST: Dict[str, float] = {
     "condominium":        350.0,
@@ -138,7 +146,7 @@ def _header(title: str, width: int = 70) -> str:
 def _select_best(listings: List[Dict]) -> Optional[Dict]:
     """
     Select the most suitable property for due diligence:
-    Priority: has reserve_price > 0, has bmv_pct > 0, highest BMV%.
+    Priority: residential over commercial, then highest BMV%.
     Secondary: has built_up_sqft (needed for competition signal).
     Tertiary: has pos_url (POS check possible).
     """
@@ -152,8 +160,13 @@ def _select_best(listings: List[Dict]) -> Optional[Dict]:
     if not candidates:
         return listings[0] if listings else None
 
-    # Sort: built_up_sqft > 0 preferred, then by bmv_pct descending
+    def _is_commercial(l: Dict) -> int:
+        pt = (l.get("property_type") or "").lower().strip()
+        return 1 if pt in COMMERCIAL_TYPES else 0
+
+    # Sort: residential first (is_commercial=0), then sqft>0, then bmv_pct desc
     candidates.sort(key=lambda l: (
+        _is_commercial(l),
         -1 if (l.get("built_up_sqft") or 0) > 0 else 0,
         -(float(l.get("bmv_pct") or l.get("bmv_percent") or 0)),
     ))
@@ -171,6 +184,8 @@ def _clean_state(raw: str) -> str:
 
 def _get_category(listing: Dict) -> str:
     pt = (listing.get("property_type") or "").lower().strip()
+    if pt in COMMERCIAL_TYPES:
+        return "commercial"
     return PROP_CATEGORY.get(pt, DEFAULT_CATEGORY)
 
 
@@ -201,26 +216,29 @@ def stage_scrape(state: str, bn_pages: int, el_pages: int) -> List[Dict]:
     except Exception as exc:
         print(f"  => BidNow ERROR: {exc}")
 
-    # e-Lelong
-    el_state_path = Path(ELELONG_STATE_PATH)
-    prev_state = json.loads(el_state_path.read_text(encoding="utf-8")) \
-                 if el_state_path.exists() else {}
-    print(f"\n  e-Lelong — {state}, up to {el_pages} pages...")
-    t0 = time.time()
-    try:
-        el = ELelongScraper()
-        el_listings, new_state = el.scrape_listings(
-            known_slugs=set(),
-            prev_search_state=prev_state,
-            states=[state],
-            max_listings=el_pages * 20,
-        )
-        elapsed = time.time() - t0
-        print(f"  => {len(el_listings)} listings in {elapsed:.1f}s")
-        all_listings.extend(el_listings)
-        el_state_path.write_text(json.dumps(new_state, indent=2), encoding="utf-8")
-    except Exception as exc:
-        print(f"  => e-Lelong ERROR: {exc}")
+    # e-Lelong (skipped when el_pages=0)
+    if el_pages > 0:
+        el_state_path = Path(ELELONG_STATE_PATH)
+        prev_state = json.loads(el_state_path.read_text(encoding="utf-8")) \
+                     if el_state_path.exists() else {}
+        print(f"\n  e-Lelong — {state}, up to {el_pages} pages...")
+        t0 = time.time()
+        try:
+            el = ELelongScraper()
+            el_listings, new_state = el.scrape_listings(
+                known_slugs=set(),
+                prev_search_state=prev_state,
+                states=[state],
+                max_listings=el_pages * 20,
+            )
+            elapsed = time.time() - t0
+            print(f"  => {len(el_listings)} listings in {elapsed:.1f}s")
+            all_listings.extend(el_listings)
+            el_state_path.write_text(json.dumps(new_state, indent=2), encoding="utf-8")
+        except Exception as exc:
+            print(f"  => e-Lelong ERROR: {exc}")
+    else:
+        print("\n  e-Lelong — skipped (el-pages=0)")
 
     return all_listings
 
@@ -338,7 +356,16 @@ def stage_market(listing: Dict) -> Tuple[Dict, Dict]:
     sqft      = float(listing.get("built_up_sqft") or 0)
     land_sqft = float(listing.get("land_area_sqft") or 0)
 
-    # iProperty competition signal
+    # Skip iProperty (residential-only benchmark) for commercial types
+    if category == "commercial":
+        pt = (listing.get("property_type") or "unknown").title()
+        competition = {
+            "competition_level": "N/A",
+            "note": f"{pt} is a commercial type — iProperty residential benchmarks do not apply.",
+        }
+        return competition, {}
+
+    # iProperty competition signal (residential types only)
     t0 = time.time()
     competition = {}
     try:
@@ -421,6 +448,7 @@ def stage_entry_cost(listing: Dict, reno_level: str = "light") -> Tuple[Dict, Di
         state=state,
         holding_years=5,
         maintenance_monthly=maint,
+        market_value=mkt_val,
     )
     room_rental  = calculate_room_rental_roi(
         reserve, ec,
@@ -428,12 +456,14 @@ def stage_entry_cost(listing: Dict, reno_level: str = "light") -> Tuple[Dict, Di
         built_up_sqft=sqft,
         state=state,
         holding_years=5,
+        market_value=mkt_val,
     ) if sqft > 0 or bedrooms > 0 else {"roi_mode": "room_rental", "error": "sqft/bedroom data unavailable"}
     partition    = calculate_partition_roi(
         reserve, ec,
         built_up_sqft=sqft,
         state=state,
         holding_years=5,
+        market_value=mkt_val,
     ) if sqft > 0 else {"roi_mode": "partition", "error": "built_up_sqft not available"}
     hold_roi     = calculate_roi(
         reserve, ec,
@@ -441,6 +471,7 @@ def stage_entry_cost(listing: Dict, reno_level: str = "light") -> Tuple[Dict, Di
         state=state,
         holding_years=5,
         maintenance_monthly=maint,
+        market_value=mkt_val,
     )
     return ec, flip_roi, full_unit, room_rental, partition, hold_roi
 
@@ -747,6 +778,8 @@ def print_report(
 def main():
     parser = argparse.ArgumentParser(description="Property auction due diligence E2E")
     parser.add_argument("--state",    default="Kuala Lumpur", help="State to scrape")
+    parser.add_argument("--district", default="",
+                        help="Optional district/city filter (e.g. Puchong, Subang Jaya)")
     parser.add_argument("--bn-pages", type=int, default=2, help="BidNow pages to fetch")
     parser.add_argument("--el-pages", type=int, default=2, help="e-Lelong pages to fetch")
     parser.add_argument("--reno",     default="light",
@@ -757,11 +790,13 @@ def main():
     args = parser.parse_args()
 
     print(_header(f"AUCTION PROPERTY DUE DILIGENCE  —  {date.today()}"))
+    district_filter = args.district.strip()
     print(f"\n  State : {args.state}  |  BidNow pages: {args.bn_pages}"
-          f"  |  e-Lelong pages: {args.el_pages}")
+          f"  |  e-Lelong pages: {args.el_pages}"
+          + (f"  |  District filter: {district_filter}" if district_filter else ""))
     total_start = time.time()
 
-    # ── Stage 1: Scrape ───────────────────────────────────────────────────────
+    # ── Stage 1: Scrape ─────────────────────────────────────────────────────
     print("\n[1/7] SCRAPING")
     print(_sep())
     listings = stage_scrape(args.state, args.bn_pages, args.el_pages)
@@ -769,6 +804,22 @@ def main():
     if not listings:
         print("  ERROR: No listings scraped — cannot continue.")
         return 1
+
+    # ── District filter ─────────────────────────────────────────────────────────
+    if district_filter:
+        import re as _re
+        kw = district_filter.lower()
+        filtered = [
+            l for l in listings
+            if kw in (l.get("full_address") or "").lower()
+            or kw in (l.get("district") or "").lower()
+            or kw in (l.get("city") or "").lower()
+        ]
+        if filtered:
+            print(f"  District filter '{district_filter}': {len(filtered)}/{len(listings)} listings match")
+            listings = filtered
+        else:
+            print(f"  WARNING: No listings matched district '{district_filter}' — using all {len(listings)} results")
 
     # ── Stage 2: Select ───────────────────────────────────────────────────────
     print("\n[2/7] PROPERTY SELECTION")

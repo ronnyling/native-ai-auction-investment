@@ -228,6 +228,7 @@ def calculate_roi(
     is_citizen: bool = True,
     vacancy_months_per_year: float = 1.0,
     maintenance_monthly: float = 300.0,
+    market_value: float = 0.0,
 ) -> Dict:
     """
     Estimate ROI for a given holding period (sell at end of period).
@@ -253,7 +254,9 @@ def calculate_roi(
       monthly_cashflow_rm     monthly net rent minus mortgage payment
     """
     appn_rate  = APPRECIATION_PA.get(state, DEFAULT_APPRECIATION) / 100
-    exit_price = round(reserve_price * (1 + appn_rate) ** holding_years)
+    # Appreciate from current market value; fall back to reserve_price when MV unknown
+    _base      = market_value if market_value > 0 else reserve_price
+    exit_price = round(_base * (1 + appn_rate) ** holding_years)
 
     cap_gain   = exit_price - reserve_price
     tax        = round(cap_gain * rpgt_rate(holding_years, is_citizen), 2)
@@ -523,6 +526,7 @@ def calculate_full_unit_rental_roi(
     is_citizen: bool = True,
     vacancy_months_per_year: float = 1.0,
     maintenance_monthly: float = 300.0,
+    market_value: float = 0.0,
 ) -> Dict:
     """
     Strategy 1 — FULL UNIT rental.
@@ -550,6 +554,7 @@ def calculate_full_unit_rental_roi(
         is_citizen=is_citizen,
         vacancy_months_per_year=vacancy_months_per_year,
         maintenance_monthly=maintenance_monthly,
+        market_value=market_value,
     )
     eff_monthly = monthly_rent_est * (1 - vacancy_months_per_year / 12) - maintenance_monthly
     total_inv   = entry_cost["total_investment_rm"]
@@ -579,6 +584,7 @@ def calculate_room_rental_roi(
     num_middle: int = 0,
     num_small:  int = 0,
     use_midpoint: bool = True,
+    market_value: float = 0.0,
 ) -> Dict:
     """
     Strategy 2 — ROOM rental (existing structure, no partition works).
@@ -657,7 +663,8 @@ def calculate_room_rental_roi(
 
     # ── Capital appreciation + ROI ────────────────────────────────────────────
     appn  = APPRECIATION_PA.get(state, DEFAULT_APPRECIATION) / 100
-    exit_ = round(reserve_price * (1 + appn) ** holding_years)
+    _base = market_value if market_value > 0 else reserve_price
+    exit_ = round(_base * (1 + appn) ** holding_years)
     cap_g = exit_ - reserve_price
     tax   = round(max(0.0, cap_g) * rpgt_rate(holding_years, is_citizen), 2)
     net_g = round(cap_g - tax, 2)
@@ -710,6 +717,7 @@ def calculate_partition_roi(
     num_ensuite_override: int = 0,
     num_shared_override:  int = 0,
     use_midpoint: bool = True,
+    market_value: float = 0.0,
 ) -> Dict:
     """
     Strategy 3 — PARTITION room rental.
@@ -778,7 +786,8 @@ def calculate_partition_roi(
     net_yield    = round(eff_monthly   * 12 / reserve_price * 100, 2) if reserve_price else 0.0
 
     appn  = APPRECIATION_PA.get(state, DEFAULT_APPRECIATION) / 100
-    exit_ = round(reserve_price * (1 + appn) ** holding_years)
+    _base = market_value if market_value > 0 else reserve_price
+    exit_ = round(_base * (1 + appn) ** holding_years)
     cap_g = exit_ - reserve_price
     tax   = round(max(0.0, cap_g) * rpgt_rate(holding_years, is_citizen), 2)
     net_g = round(cap_g - tax, 2)
