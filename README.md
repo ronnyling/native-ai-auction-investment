@@ -228,12 +228,24 @@ tenure: freehold
 auction_date: '2026-06-23'
 auction_count: 1
 auction_type: LACA
-status: new          # new | interested | pass | bid
+status: new          # new | reviewing | shortlisted | visiting | bid | closed (terminal)
 rating: 0
 ---
 ```
 
-Update `status: interested` in Obsidian when marking a property for due diligence. The e2e flow reads `status` to prioritise analysis.
+Update `status` in Obsidian as the note moves through the lifecycle. The e2e flow reads `status` to prioritise analysis.
+
+## Property Lifecycle
+
+Canonical lifecycle:
+
+`new` → `reviewing` → `shortlisted` → `visiting` → `bid` → `closed`
+
+Terminal end state: `closed`
+
+Legacy aliases: `interested` maps to `reviewing`, while `rejected`, `passed`, and `pass` map to `closed` during migration.
+
+Use `closed` for notes that are finished. Active alerts and monitor queues should only show notes that have not yet reached `closed`.
 
 ---
 
@@ -327,20 +339,39 @@ When logging a beta issue, include:
 - The stage where the issue appeared.
 - Whether the issue is a crash, a wrong recommendation, or an explanation gap.
 
-### Obsidian Keyword Search Workflow
+### Obsidian Monitor
 
-Use Obsidian's search bar after the scraper has written notes. This is the user-facing filter layer; do not change the scraper just to add keyword search.
+Use the dashboard note as the user-facing monitoring layer. Keep the scraper state-based; use Obsidian for keyword monitoring and lifecycle review.
 
-Suggested search sequence:
+Put watch terms in the Dashboard frontmatter under `monitor_keywords`, and set the terminal state list under `terminal_statuses`.
+
+What it shows:
+1. Delta matches - notes scraped today that match any monitor keyword.
+2. Open monitor queue - notes that match any monitor keyword but have not yet reached the terminal state.
+3. Notification bar - notes near auction that are still active, so you can see what needs attention before the deadline.
+
+Keyword matching is against the note's visible property text and metadata, including address, city, state, postcode, bank, auctioneer, property type, status, action_needed, tags, and file name.
+
+Suggested workflow:
 1. Search the district or city first, for example `Puchong`, `PJ`, or `Shah Alam`.
-2. Narrow by note fields in the YAML frontmatter, such as `status: interested`, `tenure: leasehold`, or `auction_type: LACA`.
+2. Narrow by note fields in the YAML frontmatter, such as `status: reviewing`, `tenure: leasehold`, or `auction_type: LACA`.
 3. Add investment filters when needed, such as `bmv_pct`, `reserve_price`, or `market_value`.
 4. Open the matching note and review the property summary, risks, and report text.
 
 Fast checks:
 - Use the global search pane in Obsidian to scan the whole vault.
-- Search for the exact note state you want, for example `status: interested`.
-- Combine a location term with a field term to narrow results quickly, for example `Puchong` + `status: interested`.
+- Search for `status: reviewing` to see active notes.
+- Combine a location term with a field term to narrow results quickly, for example `Puchong` + `status: reviewing`.
+
+## Templater Cockpit Bridge
+
+The vault includes an Obsidian-native startup hook through Templater. The startup template at `vault/_templates/_startup/cockpit-bootstrap.md` calls the `cockpit_run` system-command function, which in turn runs `scraper/obsidian-cockpit.ps1`.
+
+One-time setup inside Obsidian:
+1. Enable `Enable startup templates` in Templater.
+2. Enable `Enable user system command functions` in Templater.
+
+After that, opening Obsidian can trigger the Cockpit pipeline without a manual tag or a separate launcher.
 
 ---
 

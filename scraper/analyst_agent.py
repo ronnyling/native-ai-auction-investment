@@ -1,24 +1,30 @@
 """
 analyst_agent.py — LLM-powered investment scoring for auction properties.
 
-Uses OpenAI GPT-4o-mini to evaluate each high-priority property and output:
+Uses MiMo or OpenAI to evaluate each high-priority property and output:
   agent_score          int 0-100
   agent_recommendation str "skip" | "investigate" | "shortlist" | "bid"
   agent_reasoning      str 1-2 sentences specific to this property
+    agent_confidence     str "llm" | "fallback"
 
-Runs only on properties where bmv_pct >= HIGH_PRIORITY_BMV or
+Runs only on properties where bmv_pct / independent_bmv_pct >= HIGH_PRIORITY_BMV or
 auction_count >= HIGH_PRIORITY_ROUND (same threshold as market_research.py).
 
 Environment variables:
-  OPENAI_API_KEY   required — OpenAI API key
-  ANALYST_MODEL    optional — model to use (default: gpt-4o-mini)
+    LLM_PROVIDER     optional — "mimo" or "openai" override (auto-detect by keys otherwise)
+    MIMO_API_KEY     optional — MiMo API key
+    MIMO_BASE_URL    optional — MiMo API base URL
+    MIMO_MODEL       optional — model to use for MiMo (default: mimo-v2.5-pro)
+    OPENAI_API_KEY   optional — OpenAI API key
+    ANALYST_MODEL    optional — override model name
 """
 
 import json
 import os
+import re
 import time
 from datetime import date
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from openai import OpenAI
@@ -194,6 +200,44 @@ def _append_guardrail_risk(existing: str, listing: Dict) -> str:
     return f"{existing}, {guardrail}" if existing else guardrail
 
 
+def _extract_json_from_text(text: str) -> Dict[str, Any]:
+    """Extract the first JSON object from a model response."""
+    clean = re.sub(r"```(?:json)?\s*|\s*```", "", text).strip()
+
+    try:
+        obj = json.loads(clean)
+        if isinstance(obj, dict):
+            return obj
+    except json.JSONDecodeError:
+        pass
+
+    decoder = json.JSONDecoder()
+    for idx, char in enumerate(clean):
+        if char != "{":
+            continue
+        try:
+            obj, _ = decoder.raw_decode(clean[idx:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+
+    raise ValueError("Could not extract JSON object from model response")
+
+
+def _primary_bmv_pct(listing: Dict) -> Optional[float]:
+    """Return the best available BMV signal, preferring independent market data."""
+    for key in ("independent_bmv_pct", "bmv_pct", "bmv_percent"):
+        value = listing.get(key)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 # ── Rule-based fallback (no OpenAI API key) ───────────────────────────────────
 
 def _score_rule_based(listing: Dict) -> Dict:
@@ -201,7 +245,8 @@ def _score_rule_based(listing: Dict) -> Dict:
     Simple deterministic scoring used when OpenAI is unavailable.
     Not a substitute for LLM analysis — flags only the most obvious signals.
     """
-    bmv      = float(listing.get("bmv_pct") or listing.get("bmv_percent") or 0)
+    bmv_raw  = _primary_bmv_pct(listing)
+    bmv      = float(bmv_raw) if bmv_raw is not None else 0.0
     rnd      = int(listing.get("auction_count", 1) or 1)
     yld      = float(listing.get("est_rental_yield") or 0)
     import re as _re
@@ -278,6 +323,7 @@ def _score_rule_based(listing: Dict) -> Dict:
         "agent_due_diligence":    ", ".join(dd_flags[:3]),
         "agent_run_date":         str(date.today()),
         "agent_mode":             "rule_based",
+        "agent_confidence":       "fallback",
     }
 
 
@@ -286,32 +332,95 @@ def _score_rule_based(listing: Dict) -> Dict:
 class AnalystAgent:
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
-        self.model   = os.environ.get("ANALYST_MODEL", DEFAULT_MODEL)
+        self.llm_provider = self._detect_llm_provider()
+        self.api_key = self._resolve_api_key(api_key)
+        self.base_url = self._resolve_base_url()
+        self.model   = self._resolve_model()
         self._client = None
         self._available = False
 
-        if not OPENAI_AVAILABLE:
-            print("  [analyst] openai package not installed — skipping agent stage")
+        if self.llm_provider is None:
+            print("  [analyst] no LLM provider configured — using rule-based fallback scoring")
+            self._log_startup_status()
             return
-        if not self.api_key:
-            print("  [analyst] OPENAI_API_KEY not set — skipping agent stage")
+        if not OPENAI_AVAILABLE:
+            print("  [analyst] openai package not installed — using rule-based fallback scoring")
+            self._log_startup_status()
             return
 
         try:
-            self._client = OpenAI(api_key=self.api_key)
+            if self.llm_provider == "mimo":
+                mimo_key = os.environ.get("MIMO_API_KEY", "")
+                mimo_base_url = self.base_url or "https://token-plan-sgp.xiaomimimo.com/v1"
+                if not mimo_key:
+                    print("  [analyst] MIMO_API_KEY not set — using rule-based fallback scoring")
+                    self._log_startup_status()
+                    return
+                self._client = OpenAI(api_key=mimo_key, base_url=mimo_base_url)
+            elif self.llm_provider == "openai":
+                if not self.api_key:
+                    print("  [analyst] OPENAI_API_KEY not set — using rule-based fallback scoring")
+                    self._log_startup_status()
+                    return
+                self._client = OpenAI(api_key=self.api_key)
+            else:
+                print(f"  [analyst] unsupported provider '{self.llm_provider}' — using rule-based fallback scoring")
+                self._log_startup_status()
+                return
             self._available = True
         except Exception as exc:
-            print(f"  [analyst] OpenAI init failed: {exc}")
+            print(f"  [analyst] LLM init failed: {exc}")
+        self._log_startup_status()
+
+    def _detect_llm_provider(self) -> Optional[str]:
+        explicit_provider = (
+            os.environ.get("LLM_PROVIDER")
+            or os.environ.get("ANALYST_PROVIDER")
+            or ""
+        ).strip().lower()
+        if explicit_provider:
+            return explicit_provider
+        if os.environ.get("MIMO_API_KEY"):
+            return "mimo"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "openai"
+        return None
+
+    def _log_startup_status(self) -> None:
+        print(f"  [Analyst] Provider={self.llm_provider or 'none'} Available={self.available}")
+
+    def _resolve_api_key(self, api_key: Optional[str]) -> str:
+        if api_key:
+            return api_key
+        if self.llm_provider == "mimo":
+            return os.environ.get("MIMO_API_KEY", "")
+        if self.llm_provider == "openai":
+            return os.environ.get("OPENAI_API_KEY", "")
+        return ""
+
+    def _resolve_base_url(self) -> Optional[str]:
+        if self.llm_provider == "mimo":
+            return os.environ.get("MIMO_BASE_URL", "https://token-plan-sgp.xiaomimimo.com/v1")
+        return None
+
+    def _resolve_model(self) -> str:
+        override = os.environ.get("ANALYST_MODEL", "").strip()
+        if override:
+            return override
+        if self.llm_provider == "mimo":
+            return os.environ.get("MIMO_MODEL", "mimo-v2.5-pro")
+        return DEFAULT_MODEL
 
     @property
     def available(self) -> bool:
         return self._available
 
     def is_high_priority(self, listing: Dict) -> bool:
-        bmv = listing.get("bmv_pct") or listing.get("bmv_percent") or 0
+        bmv = _primary_bmv_pct(listing)
+        if bmv is None:
+            return False
         rnd = listing.get("auction_count", 1) or 1
-        return float(bmv) >= HIGH_PRIORITY_BMV or int(rnd) >= HIGH_PRIORITY_ROUND
+        return bmv >= HIGH_PRIORITY_BMV or int(rnd) >= HIGH_PRIORITY_ROUND
 
     def analyze(
         self,
@@ -333,7 +442,6 @@ class AnalystAgent:
         try:
             resp = self._client.chat.completions.create(
                 model=self.model,
-                response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user",   "content": prompt},
@@ -341,8 +449,11 @@ class AnalystAgent:
                 max_tokens=400,
                 temperature=0.2,
             )
-            raw  = resp.choices[0].message.content
-            data = json.loads(raw)
+            raw  = resp.choices[0].message.content or "{}"
+            try:
+                data = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                data = _extract_json_from_text(raw)
 
             score = int(data.get("score", 0))
             rec   = str(data.get("recommendation", "investigate")).lower().strip()
@@ -363,6 +474,7 @@ class AnalystAgent:
                 "agent_due_diligence":    str(data.get("due_diligence_flags", ""))[:300],
                 "agent_run_date":         str(date.today()),
                 "agent_mode":             "llm",
+                "agent_confidence":       "llm",
             }
 
         except Exception as exc:
@@ -378,6 +490,8 @@ class AnalystAgent:
         enriched = 0
         skipped  = 0
 
+        print(f"  [Stage9] Scoring {len(listings)} listings (fallback={not self._available})")
+
         for listing in listings:
             if not self.is_high_priority(listing):
                 skipped += 1
@@ -391,6 +505,8 @@ class AnalystAgent:
             if result:
                 listing.update(result)
                 enriched += 1
+                label = listing.get("address") or listing.get("full_address") or listing.get("listing_id")
+                print(f"  [analyst] Scored: {label} -> {listing.get('agent_score')}")
             else:
                 skipped += 1
 

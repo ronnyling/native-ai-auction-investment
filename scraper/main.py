@@ -19,7 +19,11 @@ Environment variables (set by GitHub Actions or locally):
   KNOWN_IDS_PATH    path to known_ids.json    (default: known_ids.json)
   SCRAPE_STATES     comma-separated list of states to scrape (default: all)
   MAX_PAGES         hard page cap per state (default: unlimited)
-  OPENAI_API_KEY    OpenAI API key for Analyst Agent (optional)
+    LLM_PROVIDER      optional analyst provider override (mimo/openai)
+    MIMO_API_KEY      MiMo API key for Analyst Agent (optional)
+    MIMO_BASE_URL     MiMo API base URL (optional)
+    MIMO_MODEL        MiMo model name (optional)
+    OPENAI_API_KEY    OpenAI API key for Analyst Agent (optional)
   ANALYST_MODEL     model to use (default: gpt-4o-mini)
 """
 
@@ -63,7 +67,6 @@ MARKET_CACHE_PATH = os.environ.get(
 )
 # Set RUN_MARKET=1 to force-run market research stage (default: auto, skip if cache fresh)
 RUN_MARKET = os.environ.get("RUN_MARKET", "auto").strip().lower()
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 ELELONG_STATE_PATH = os.environ.get(
     "ELELONG_STATE_PATH",
     str(SCRIPT_DIR / "elelong_search_state.json"),
@@ -354,24 +357,25 @@ def run():
     agent_enriched = 0
     agent_skipped  = 0
     try:
-        analyst = AnalystAgent(api_key=OPENAI_API_KEY)
-        if analyst.available:
-            agent_enriched, agent_skipped = analyst.enrich_listings(enrichable)
-            print(f"  {agent_enriched} properties scored by AI analyst")
-            print(f"  {agent_skipped} properties skipped (low priority or no API key)")
+        analyst = AnalystAgent()
+        # Always run enrich_listings — it falls back to rule-based scoring when
+        # no LLM provider is configured, so vault notes are always scored.
+        agent_enriched, agent_skipped = analyst.enrich_listings(enrichable)
+        provider_label = {"mimo": "MiMo", "openai": "OpenAI"}.get(analyst.llm_provider, "LLM")
+        mode = provider_label if analyst.available else "rule-based fallback"
+        print(f"  {agent_enriched} properties scored ({mode})")
+        print(f"  {agent_skipped} properties skipped (below priority threshold)")
 
-            # Re-write notes that received agent recommendations
-            agent_written = 0
-            for listing in enrichable:
-                if listing.get("agent_recommendation"):
-                    try:
-                        writer.write(listing, "update_price")
-                        agent_written += 1
-                    except Exception as exc:
-                        print(f"  [agent write] ERROR {listing.get('listing_id')}: {exc}")
-            print(f"  {agent_written} notes updated with AI recommendation")
-        else:
-            print("  Analyst Agent skipped (OPENAI_API_KEY not set)")
+        # Re-write notes that received agent recommendations
+        agent_written = 0
+        for listing in enrichable:
+            if listing.get("agent_recommendation"):
+                try:
+                    writer.write(listing, "update_price")
+                    agent_written += 1
+                except Exception as exc:
+                    print(f"  [agent write] ERROR {listing.get('listing_id')}: {exc}")
+        print(f"  {agent_written} notes updated with agent recommendation")
     except Exception as exc:
         print(f"  [analyst] Stage error: {exc}")
         import traceback; traceback.print_exc()

@@ -4,10 +4,11 @@ md_writer.py — Write and update Obsidian property vault notes.
 Rules (CRITICAL):
 - New property  : create vault/Properties/bn-{id}.md from scratch
 - Existing note : update ONLY frontmatter keys owned by the scraper
-                  NEVER touch anything below the "## Notes" heading
+                                    NEVER touch anything below the "## Notes" heading
 - Scraper-owned frontmatter keys are listed in SCRAPER_OWNED_KEYS
 - User-owned keys (status, rating, visited, action_needed, tags)
-  are preserved exactly as found in the existing file
+    are preserved, but status is normalized to the canonical lifecycle and
+    lifecycle aliases are collapsed during writes
 
 Also provides:
 - build_vault_index(): scan all existing notes → dict keyed by postcode:street
@@ -21,6 +22,100 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml  # pyyaml
+
+
+CANONICAL_STATUSES = {
+    "new",
+    "reviewing",
+    "shortlisted",
+    "visiting",
+    "bid",
+    "closed",
+}
+
+STATUS_ALIASES = {
+    "interested": "reviewing",
+    "review": "reviewing",
+    "approved": "shortlisted",
+    "shortlist": "shortlisted",
+    "rejected": "closed",
+    "passed": "closed",
+    "pass": "closed",
+    "custom": "reviewing",
+}
+
+
+def _coerce_tags(value: object) -> List[str]:
+    if not value:
+        return []
+    if isinstance(value, list):
+        items = value
+    elif isinstance(value, tuple):
+        items = list(value)
+    elif isinstance(value, str):
+        items = [part.strip() for part in value.split(",")]
+    else:
+        items = [value]
+
+    tags: List[str] = []
+    for item in items:
+        text = str(item).strip()
+        if text:
+            tags.append(text)
+    return tags
+
+
+def _status_token(value: object) -> str:
+    if value is None:
+        return ""
+    return re.sub(r"[^a-z]+", "", str(value).strip().lower())
+
+
+def _resolve_status(value: object) -> str:
+    token = _status_token(value)
+    if not token:
+        return ""
+    canonical = STATUS_ALIASES.get(token, token)
+    return canonical if canonical in CANONICAL_STATUSES else ""
+
+
+def derive_status(value: object = None, tags: Optional[List[str]] = None) -> str:
+    """Normalize lifecycle values to the canonical dashboard status set."""
+    status = _resolve_status(value)
+    if status:
+        return status
+
+    for tag in _coerce_tags(tags):
+        status = _resolve_status(tag)
+        if status:
+            return status
+
+    return "new"
+
+
+def _normalize_tags(tags: object, status: object = None) -> List[str]:
+    normalized: List[str] = []
+    seen = set()
+
+    for tag in _coerce_tags(tags):
+        token = _status_token(tag)
+        if not token or token == "custom":
+            continue
+        if token in STATUS_ALIASES:
+            token = STATUS_ALIASES[token]
+            tag = token
+        elif token in CANONICAL_STATUSES:
+            tag = token
+
+        if tag not in seen:
+            normalized.append(tag)
+            seen.add(tag)
+
+    status_value = derive_status(status, normalized)
+    if status_value and status_value != "new" and status_value not in seen:
+        normalized.append(status_value)
+
+    return normalized
 
 # Keys the scraper is allowed to write/overwrite
 SCRAPER_OWNED_KEYS = {
@@ -44,6 +139,7 @@ SCRAPER_OWNED_KEYS = {
     "market_comps_date", "market_comps_n", "market_source", "market_area_match",
     # Analyst agent fields
     "agent_score", "agent_recommendation", "agent_reasoning", "agent_run_date",
+    "agent_confidence",
 }
 
 # Keys preserved from existing notes (user-owned)
@@ -126,7 +222,7 @@ class MDWriter:
     # ── Rendering ─────────────────────────────────────────────────────────────
 
     def _render_new_note(self, listing: Dict) -> str:
-        fm = self._build_frontmatter(listing, existing_user_fields={})
+        fm = self._build_frontmatter(listing, existing_user_fields={}, existing_status=None)
         fm_str = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
         pos_line = ""
@@ -142,7 +238,7 @@ class MDWriter:
         )
 
     def _build_frontmatter(
-        self, listing: Dict, existing_user_fields: Dict
+        self, listing: Dict, existing_user_fields: Dict, existing_status: Optional[str] = None
     ) -> Dict:
         """Build the full frontmatter dict (scraper keys + preserved user keys)."""
         lat = listing.get("lat")
@@ -154,6 +250,11 @@ class MDWriter:
             postcode = int(postcode_raw) if postcode_raw else 0
         except ValueError:
             postcode = 0
+
+        raw_tags = existing_user_fields.get("tags", listing.get("tags", []))
+        status_seed = existing_status if existing_status is not None else listing.get("status")
+        status = derive_status(status_seed, _coerce_tags(raw_tags))
+        tags = _normalize_tags(raw_tags, status)
 
         fm = {
             # Identity
@@ -213,16 +314,22 @@ class MDWriter:
             "agent_recommendation": listing.get("agent_recommendation"),
             "agent_reasoning":      listing.get("agent_reasoning"),
             "agent_run_date":       listing.get("agent_run_date"),
+            "agent_confidence":     listing.get("agent_confidence") or (
+                "llm" if listing.get("agent_mode") == "llm"
+                else "fallback" if listing.get("agent_mode") == "rule_based"
+                else None
+            ),
             # Scrape metadata
             "scrape_date": str(date.today()),
             "source_bn": listing.get("url", ""),
             "source_llt": listing.get("llt_url", ""),
+            # Lifecycle
+            "status": status,
             # User-owned (defaults for new notes, preserved from existing)
-            "status": existing_user_fields.get("status", "new"),
             "rating": existing_user_fields.get("rating", 0),
             "visited": existing_user_fields.get("visited", False),
             "action_needed": existing_user_fields.get("action_needed", ""),
-            "tags": existing_user_fields.get("tags", listing.get("tags", [])),
+            "tags": tags,
         }
         return fm
 
@@ -251,7 +358,20 @@ class MDWriter:
         user_fields = {k: v for k, v in existing_fm.items() if k in USER_OWNED_KEYS}
 
         # Build updated frontmatter with new scraper data + preserved user fields
-        new_fm = self._build_frontmatter(listing, user_fields)
+        new_fm = self._build_frontmatter(listing, user_fields, existing_status=existing_fm.get("status"))
+
+        # Preserve existing analyst results when a later run does not produce a
+        # stronger replacement. This prevents market-only updates and rule-based
+        # fallback runs from erasing previously written LLM scores.
+        existing_agent_score = existing_fm.get("agent_score")
+        new_agent_mode = str(listing.get("agent_mode") or "").strip().lower()
+        for key in ("agent_score", "agent_recommendation", "agent_reasoning", "agent_run_date", "agent_confidence"):
+            existing_value = existing_fm.get(key)
+            if existing_value is None:
+                continue
+            if new_fm.get(key) is None or (existing_agent_score is not None and new_agent_mode == "rule_based"):
+                new_fm[key] = existing_value
+
         new_fm_str = yaml.dump(
             new_fm, allow_unicode=True, default_flow_style=False, sort_keys=False
         )
@@ -312,7 +432,7 @@ def _default_daily_note(today: str) -> str:
 ```dataview
 TABLE reserve_price, bmv_pct, state, city, auction_date, status
 FROM "Properties"
-WHERE days_to_auction <= 7 AND status != "passed"
+WHERE days_to_auction <= 7 AND !contains(list("closed","rejected","passed","pass"), status)
 SORT auction_date ASC
 ```
 
@@ -328,7 +448,7 @@ SORT reserve_price ASC
 ```dataview
 TABLE reserve_price, original_reserve, total_price_drop, auction_count, city, auction_date
 FROM "Properties"
-WHERE auction_count > 1 AND status != "passed"
+WHERE auction_count > 1 AND !contains(list("closed","rejected","passed","pass"), status)
 SORT total_price_drop DESC
 ```
 
@@ -336,7 +456,7 @@ SORT total_price_drop DESC
 ```dataview
 TABLE reserve_price, bmv_pct, city, auction_date, action_needed, rating
 FROM "Properties"
-WHERE contains(list("shortlisted","visiting","bid"), status)
+WHERE contains(list("reviewing","interested","approved","shortlisted","visiting","bid"), status)
 SORT auction_date ASC
 ```
 """

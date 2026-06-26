@@ -486,13 +486,12 @@ def cat5_analyst():
     _assert(5, "5.9", "HIGH_PRIORITY_BMV = 29",
             HIGH_PRIORITY_BMV == 29, actual=HIGH_PRIORITY_BMV)
 
-    # 5.10  AnalystAgent.available reflects no API key in env
-    import os
-    has_key = bool(os.environ.get("OPENAI_API_KEY", ""))
-    _assert(5, "5.10", f"AnalystAgent.available = {has_key} (matches env OPENAI_API_KEY)",
-            agent.available == has_key,
-            actual=agent.available, expected=has_key,
-            notes="OK if key is absent — falls back to rule-based")
+    # 5.10  AnalystAgent.available reflects any configured LLM provider
+    has_provider = bool(getattr(agent, "llm_provider", None))
+    _assert(5, "5.10", f"AnalystAgent.available = {has_provider} (matches detected LLM provider)",
+            agent.available == has_provider,
+            actual=agent.available, expected=has_provider,
+            notes=f"provider={getattr(agent, 'llm_provider', None) or 'rule-based'}")
 
     # 5.11  enrich_listings returns (enriched_count, skipped_count) tuple
     agent2 = AnalystAgent()
@@ -502,9 +501,10 @@ def cat5_analyst():
             actual=(enriched_cnt, skipped_cnt), expected=(0, 0))
 
     # 5.12  Required output fields present
-    required = ["agent_score", "agent_recommendation", "agent_reasoning",
-                "agent_exit_strategy", "agent_holding_period",
-                "agent_key_risks", "agent_due_diligence", "agent_mode"]
+        required = ["agent_score", "agent_recommendation", "agent_reasoning",
+                                "agent_exit_strategy", "agent_holding_period",
+                                "agent_key_risks", "agent_due_diligence", "agent_mode",
+                                "agent_confidence"]
     r_full = _score_rule_based(_mk(bmv_pct=40, state="Kuala Lumpur"))
     missing = [f for f in required if f not in r_full]
     _assert(5, "5.12", "All required output fields present in rule-based result",

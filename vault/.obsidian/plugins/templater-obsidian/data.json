@@ -1,0 +1,26 @@
+{
+  "data_version": 2,
+  "command_timeout": 1800,
+  "templates_folder": "_templates",
+  "templates_pairs": [
+    [
+      "cockpit_run",
+      "powershell -NoProfile -ExecutionPolicy Bypass -File \"..\\scraper\\obsidian-cockpit.ps1\""
+    ]
+  ],
+  "trigger_on_file_creation_mode": "none",
+  "auto_jump_to_cursor": false,
+  "jump_to_cursor_after_file_name": false,
+  "shell_path": "",
+  "user_scripts_folder": "",
+  "folder_templates": [],
+  "file_templates": [],
+  "syntax_highlighting": true,
+  "syntax_highlighting_mobile": false,
+  "enabled_templates_hotkeys": [],
+  "startup_templates": [
+    "_templates/_startup/cockpit-bootstrap.md"
+  ],
+  "intellisense_render": 1,
+  "ignore_folders_on_creation": []
+}

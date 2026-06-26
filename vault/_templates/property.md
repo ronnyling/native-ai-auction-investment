@@ -44,7 +44,7 @@ scrape_date: ""
 source_bn: ""
 source_llt: ""
 
-status: new
+status: new  # new | reviewing | shortlisted | visiting | bid | closed (terminal)
 rating: 0
 visited: false
 action_needed: ""
