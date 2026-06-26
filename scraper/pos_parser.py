@@ -404,7 +404,18 @@ def parse_pos_fields(text: str) -> Dict[str, Any]:
             name = _clean_name(m.group(1).strip())
             # Reject if name is itself a label keyword (prevents false ASSIGNORS match)
             if name and not re.fullmatch(r"(?:ASSIGNORS?|BORROWERS?|CUSTOMERS?)", name, re.I):
-                out["borrower"] = name
+                # Standalone BORROWER (not compound ASSIGNORS/BORROWERS) requires
+                # other party context in the text — otherwise defer to MiMo.
+                label = m.group(0).strip().split()[-1].upper()
+                is_compound = "/" in m.group(0)
+                if label.startswith("BORROWER") and not is_compound:
+                    has_context = re.search(
+                        r"ASSIGNEE|BANK|ASSIGNOR|CUSTOMER|\bAND\b", text, re.I,
+                    )
+                    if has_context:
+                        out["borrower"] = name
+                else:
+                    out["borrower"] = name
 
     if "borrower" not in out:
         # English LACA variant: "(N) NAME (NRIC)\n(N) NAME2 (NRIC)\nASSIGNORS / BORROWERS"
