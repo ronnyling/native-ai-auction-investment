@@ -266,7 +266,7 @@ class MDWriter:
             "address": listing.get("full_address", ""),
             "postcode": postcode,
             "city": _clean_city(listing.get("district", "")),
-            "state": listing.get("state", ""),
+            "state": _clean_city(listing.get("state", "")),
             "region": listing.get("region", ""),
             "location": location,
             # Property specs
@@ -562,8 +562,25 @@ def _render_summary(listing: Dict) -> str:
 
 
 def _clean_city(district: str) -> str:
-    """Strip leading 5-digit postcode from district string e.g. '11700 Gelugor' → 'Gelugor'."""
-    return re.sub(r"^\d{5}\s*", "", district).strip()
+    """Strip leading 5-digit postcode and trailing periods from district/state string.
+    e.g. '11700 Gelugor' → 'Gelugor', 'Kuala Lumpur.' → 'Kuala Lumpur'"""
+    cleaned = re.sub(r"^\d{5}\s*", "", district).strip()
+    cleaned = cleaned.rstrip(".").strip()
+    # Normalise long-form state names
+    _NORMALISE = {
+        "selangor darul ehsan": "Selangor",
+        "johor darul takzim": "Johor",
+        "perak darul ridzuan": "Perak",
+        "wilayah persekutuan kuala lumpur": "Kuala Lumpur",
+        "wilayah persekutuan putrajaya": "Putrajaya",
+        "wilayah persekutuan labuan": "Labuan",
+        "pulau pinang": "Penang",
+        "kuala lumpu": "Kuala Lumpur",
+    }
+    key = cleaned.lower()
+    if key in _NORMALISE:
+        return _NORMALISE[key]
+    return cleaned
 
 
 def _normalise_street(address: str) -> str:

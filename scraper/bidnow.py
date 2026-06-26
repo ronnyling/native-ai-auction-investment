@@ -436,6 +436,25 @@ class BidNowScraper:
             district = parts[-2]
             if district.isdigit():
                 district = parts[-3] if len(parts) >= 4 else ""
+            # Strip leading 5-digit postcode from state
+            # e.g. "56000 Kuala Lumpur" → "Kuala Lumpur"
+            state = re.sub(r"^\d{5}\s*", "", state).strip()
+            # Strip trailing periods
+            state = state.rstrip(".").strip()
+            # Normalise long-form state names
+            _STATE_NORMALISE = {
+                "selangor darul ehsan": "Selangor",
+                "johor darul takzim": "Johor",
+                "perak darul ridzuan": "Perak",
+                "wilayah persekutuan kuala lumpur": "Kuala Lumpur",
+                "wilayah persekutuan putrajaya": "Putrajaya",
+                "wilayah persekutuan labuan": "Labuan",
+                "pulau pinang": "Penang",
+                "kuala lumpu": "Kuala Lumpur",
+            }
+            state_key = state.lower().rstrip(".")
+            if state_key in _STATE_NORMALISE:
+                state = _STATE_NORMALISE[state_key]
             return state, district
         return "", ""
 
