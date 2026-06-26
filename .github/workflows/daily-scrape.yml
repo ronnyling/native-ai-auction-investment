@@ -2,8 +2,8 @@ name: Daily Property Scrape
 
 on:
   schedule:
-    # 21:00 UTC = 05:00 MYT (UTC+8)
-    - cron: '0 21 * * *'
+    # 19:00 UTC = 03:00 MYT (UTC+8) — MiMo API low-usage window (0.8x)
+    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       states:

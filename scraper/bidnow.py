@@ -12,6 +12,7 @@ BMV%, sqft, tenure, auction type, deposit — all in the public page HTML.
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlencode
 
@@ -177,16 +178,36 @@ class BidNowScraper:
         self,
         known_ids: set = None,
         listing_status: str = "active",
+        max_pages: int = None,
+        max_workers: int = 3,
     ) -> List[Dict]:
-        """Scrape all 15 BidNow states and return combined listing list."""
+        """Scrape all 15 BidNow states in parallel and return combined listing list."""
         results: List[Dict] = []
         known_ids = known_ids or set()
-        for state in BIDNOW_STATES:
-            print(f"\n[BidNow] Scraping state: {state}")
+
+        def _scrape_state(state: str) -> Tuple[str, List[Dict]]:
+            """Scrape a single state with its own session (thread-safe)."""
+            scraper = BidNowScraper()
             filters = {"state": state, "listing": listing_status, "sort": "new"}
-            listings = self.scrape_listings(filters=filters, known_ids=known_ids)
-            results.extend(listings)
-            print(f"  [BidNow] {state}: {len(listings)} listings")
+            listings = scraper.scrape_listings(
+                filters=filters, max_pages=max_pages, known_ids=known_ids
+            )
+            return state, listings
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {
+                pool.submit(_scrape_state, state): state
+                for state in BIDNOW_STATES
+            }
+            for future in as_completed(futures):
+                try:
+                    state, listings = future.result()
+                    results.extend(listings)
+                    print(f"  [BidNow] {state}: {len(listings)} listings")
+                except Exception as exc:
+                    state = futures[future]
+                    print(f"  [BidNow] {state} error: {exc}")
+
         return results
 
     # ── JS extraction ─────────────────────────────────────────────────────────

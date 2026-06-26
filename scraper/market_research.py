@@ -30,6 +30,7 @@ Known limitations (to evaluate during testing):
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -137,7 +138,8 @@ class MarketResearcher:
         return self._cache
 
     def _build_cache(self) -> Dict:
-        """Scrape iProperty and build district/state PSF lookup tables."""
+        """Scrape iProperty and build district/state PSF lookup tables.
+        Sale and rent scraping runs in parallel."""
         if not REQUESTS_AVAILABLE:
             print("  [market] requests not available — skipping market research")
             return self._empty_cache()
@@ -145,50 +147,58 @@ class MarketResearcher:
         print(f"  [market] Building market cache from iProperty "
               f"({PAGES_TO_SCRAPE} pages sale + {PAGES_TO_SCRAPE} pages rent)...")
 
-        session = requests.Session()
-        session.headers.update(HEADERS)
+        def _scrape_sale() -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
+            session = requests.Session()
+            session.headers.update(HEADERS)
+            by_district: Dict[str, List[float]] = {}
+            by_state: Dict[str, List[float]] = {}
+            for page in range(1, PAGES_TO_SCRAPE + 1):
+                url = f"{IPROPERTY_SALE_BASE}?page={page}"
+                listings = self._fetch_page(session, url)
+                for l in listings:
+                    psf = self._parse_psf(l)
+                    if not psf:
+                        continue
+                    district, state = self._get_area(l)
+                    if district:
+                        by_district.setdefault(district, []).append(psf)
+                    if state:
+                        by_state.setdefault(state, []).append(psf)
+                print(f"    Sale page {page}/{PAGES_TO_SCRAPE}: "
+                      f"{len(listings)} listings")
+                time.sleep(REQUEST_DELAY)
+            return by_district, by_state
 
-        # ── Sale listings ──────────────────────────────────────────────────────
-        sale_by_district: Dict[str, List[float]] = {}
-        sale_by_state:    Dict[str, List[float]] = {}
+        def _scrape_rent() -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
+            session = requests.Session()
+            session.headers.update(HEADERS)
+            by_district: Dict[str, List[float]] = {}
+            by_state: Dict[str, List[float]] = {}
+            for page in range(1, PAGES_TO_SCRAPE + 1):
+                url = f"{IPROPERTY_RENT_BASE}?page={page}"
+                listings = self._fetch_page(session, url)
+                for l in listings:
+                    price = self._parse_price(l)
+                    sqft  = self._parse_sqft(l)
+                    if not price or not sqft or sqft < 100:
+                        continue
+                    rent_psf = price / sqft
+                    district, state = self._get_area(l)
+                    if district:
+                        by_district.setdefault(district, []).append(rent_psf)
+                    if state:
+                        by_state.setdefault(state, []).append(rent_psf)
+                print(f"    Rent page {page}/{PAGES_TO_SCRAPE}: "
+                      f"{len(listings)} listings")
+                time.sleep(REQUEST_DELAY)
+            return by_district, by_state
 
-        for page in range(1, PAGES_TO_SCRAPE + 1):
-            url = f"{IPROPERTY_SALE_BASE}?page={page}"
-            listings = self._fetch_page(session, url)
-            for l in listings:
-                psf = self._parse_psf(l)
-                if not psf:
-                    continue
-                district, state = self._get_area(l)
-                if district:
-                    sale_by_district.setdefault(district, []).append(psf)
-                if state:
-                    sale_by_state.setdefault(state, []).append(psf)
-            print(f"    Sale page {page}/{PAGES_TO_SCRAPE}: "
-                  f"{len(listings)} listings")
-            time.sleep(REQUEST_DELAY)
-
-        # ── Rent listings ──────────────────────────────────────────────────────
-        rent_by_district: Dict[str, List[float]] = {}
-        rent_by_state:    Dict[str, List[float]] = {}
-
-        for page in range(1, PAGES_TO_SCRAPE + 1):
-            url = f"{IPROPERTY_RENT_BASE}?page={page}"
-            listings = self._fetch_page(session, url)
-            for l in listings:
-                price = self._parse_price(l)
-                sqft  = self._parse_sqft(l)
-                if not price or not sqft or sqft < 100:
-                    continue
-                rent_psf = price / sqft
-                district, state = self._get_area(l)
-                if district:
-                    rent_by_district.setdefault(district, []).append(rent_psf)
-                if state:
-                    rent_by_state.setdefault(state, []).append(rent_psf)
-            print(f"    Rent page {page}/{PAGES_TO_SCRAPE}: "
-                  f"{len(listings)} listings")
-            time.sleep(REQUEST_DELAY)
+        # Run sale + rent in parallel
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            sale_future = pool.submit(_scrape_sale)
+            rent_future = pool.submit(_scrape_rent)
+            sale_by_district, sale_by_state = sale_future.result()
+            rent_by_district, rent_by_state = rent_future.result()
 
         # ── Build medians ──────────────────────────────────────────────────────
         cache = {

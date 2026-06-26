@@ -19,10 +19,13 @@ Environment variables:
     ANALYST_MODEL    optional — override model name
 """
 
+import hashlib
 import json
 import os
 import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -34,10 +37,12 @@ except ImportError:
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-HIGH_PRIORITY_BMV   = 29
-HIGH_PRIORITY_ROUND = 3
-REQUEST_DELAY       = 0.3   # seconds between API calls (rate-limit safety)
-DEFAULT_MODEL       = "gpt-4o-mini"
+HIGH_PRIORITY_BMV    = 29
+HIGH_PRIORITY_ROUND  = 3
+REQUEST_DELAY        = 0.3   # seconds between API calls (rate-limit safety)
+DEFAULT_MODEL        = "gpt-4o-mini"
+BATCH_SIZE           = 5     # properties per LLM API call
+MAX_BATCH_WORKERS    = 2     # concurrent batch API calls
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -236,6 +241,169 @@ def _primary_bmv_pct(listing: Dict) -> Optional[float]:
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _cache_key(listing: Dict) -> str:
+    """Deterministic cache key from listing fields that affect scoring."""
+    raw = f"{listing.get('listing_id')}|{listing.get('bmv_pct')}|{listing.get('independent_bmv_pct')}|{listing.get('auction_count')}|{listing.get('state')}|{listing.get('property_type')}|{listing.get('tenure')}|{listing.get('reserve_price')}|{listing.get('market_value')}|{listing.get('est_rental_yield')}"
+    return hashlib.md5(raw.encode()).hexdigest()
+
+
+# ── Rate limiter (thread-safe) ────────────────────────────────────────────────
+
+class _RateLimiter:
+    """Thread-safe token-bucket rate limiter."""
+    def __init__(self, requests_per_second: float):
+        self._interval = 1.0 / requests_per_second
+        self._lock = threading.Lock()
+        self._last = 0.0
+
+    def acquire(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            wait = self._interval - (now - self._last)
+            if wait > 0:
+                time.sleep(wait)
+            self._last = time.monotonic()
+
+
+# ── Batch LLM scoring ────────────────────────────────────────────────────────
+
+BATCH_SYSTEM_PROMPT = SYSTEM_PROMPT + """
+
+You will receive multiple property listings. Score EACH one independently.
+Return a JSON array with exactly one object per listing, in the same order.
+Each object must have these keys:
+  "listing_id", "score", "recommendation", "reasoning", "exit_strategy",
+  "holding_period", "key_risks", "due_diligence_flags"
+Return ONLY the JSON array. No markdown, no explanation, no code fences.
+"""
+
+
+def _build_listing_block(listing: Dict, idx: int) -> str:
+    """Build a single listing's text block for batch prompting."""
+    bmv = _primary_bmv_pct(listing)
+    parts = [
+        f"### Listing {idx + 1}: {listing.get('listing_id', 'unknown')}",
+        f"Address: {listing.get('full_address') or listing.get('address', 'N/A')}",
+        f"State: {listing.get('state', 'N/A')}, City: {listing.get('city') or listing.get('district', 'N/A')}",
+        f"Property type: {listing.get('property_type', 'N/A')}, Tenure: {listing.get('tenure', 'N/A')}",
+        f"Reserve price: RM {listing.get('reserve_price', 0):,.0f}, Market value: RM {listing.get('market_value', 0):,.0f}",
+        f"BMV%: {bmv if bmv is not None else 'N/A'}, Auction round: {listing.get('auction_count', 1)}",
+        f"Auction type: {listing.get('auction_type', 'N/A')}, Auction date: {listing.get('auction_date', 'N/A')}",
+    ]
+    if listing.get("est_rental_yield"):
+        parts.append(f"Est. rental yield: {listing['est_rental_yield']}%")
+    if listing.get("independent_bmv_pct"):
+        parts.append(f"Independent BMV%: {listing['independent_bmv_pct']}")
+    return "\n".join(parts)
+
+
+def _build_batch_prompt(listings: List[Dict]) -> str:
+    """Build a batch prompt for multiple listings."""
+    blocks = [_build_listing_block(l, i) for i, l in enumerate(listings)]
+    return (
+        BATCH_SYSTEM_PROMPT
+        + "\n\n---\n\n"
+        + "\n\n---\n\n".join(blocks)
+        + "\n\n---\n\n"
+        + f"Classify all {len(listings)} properties. Return a JSON array with exactly {len(listings)} objects."
+    )
+
+
+def _parse_batch_response(raw: str, expected_count: int) -> List[Dict[str, Any]]:
+    """Parse LLM batch response into a list of result dicts."""
+    clean = re.sub(r"```(?:json)?\s*|\s*```", "", raw).strip()
+
+    # Try direct JSON array parse
+    try:
+        obj = json.loads(clean)
+        if isinstance(obj, list):
+            return obj
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # Try finding the array
+    for idx, char in enumerate(clean):
+        if char != "[":
+            continue
+        try:
+            decoder = json.JSONDecoder()
+            obj, _ = decoder.raw_decode(clean[idx:])
+            if isinstance(obj, list):
+                return obj
+        except json.JSONDecodeError:
+            continue
+
+    # Fallback: extract individual objects
+    results = []
+    decoder = json.JSONDecoder()
+    for idx, char in enumerate(clean):
+        if char != "{":
+            continue
+        try:
+            obj, end = decoder.raw_decode(clean[idx:])
+            if isinstance(obj, dict):
+                results.append(obj)
+            idx += end
+        except json.JSONDecodeError:
+            continue
+
+    if results:
+        return results
+
+    raise ValueError(f"Could not extract JSON array from batch response (expected {expected_count} items)")
+
+
+def _analyze_batch(
+    client: Any, model: str, listings: List[Dict], limiter: _RateLimiter
+) -> Dict[str, Dict]:
+    """Score a batch of listings in a single LLM call. Returns {listing_id: result_dict}."""
+    prompt = _build_batch_prompt(listings)
+    limiter.acquire()
+
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": BATCH_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=2000,
+        temperature=0.2,
+    )
+    raw = resp.choices[0].message.content or "[]"
+
+    items = _parse_batch_response(raw, len(listings))
+
+    results = {}
+    for i, listing in enumerate(listings):
+        lid = str(listing.get("listing_id", ""))
+        if i < len(items):
+            data = items[i]
+            score = int(data.get("score", 0))
+            rec = str(data.get("recommendation", "investigate")).lower().strip()
+            if rec not in {"skip", "investigate", "shortlist", "bid"}:
+                rec = "investigate"
+            exit_s = str(data.get("exit_strategy", "long_hold")).lower().strip()
+            if exit_s not in {"flip", "rent", "long_hold", "skip"}:
+                exit_s = "long_hold"
+            results[lid] = {
+                "agent_score": max(0, min(100, score)),
+                "agent_recommendation": rec,
+                "agent_reasoning": str(data.get("reasoning", ""))[:500],
+                "agent_exit_strategy": exit_s,
+                "agent_holding_period": str(data.get("holding_period", ""))[:30],
+                "agent_key_risks": _append_guardrail_risk(str(data.get("key_risks", ""))[:300], listing),
+                "agent_due_diligence": str(data.get("due_diligence_flags", ""))[:300],
+                "agent_run_date": str(date.today()),
+                "agent_mode": "llm",
+                "agent_confidence": "llm",
+            }
+        else:
+            print(f"  [analyst] Batch response missing item {i+1} for {lid}, falling back to rule-based")
+            results[lid] = _score_rule_based(listing)
+
+    return results
 
 
 # ── Rule-based fallback (no OpenAI API key) ───────────────────────────────────
@@ -483,37 +651,70 @@ class AnalystAgent:
 
     def enrich_listings(self, listings: List[Dict]) -> Tuple[int, int]:
         """
-        Score all high-priority listings. Adds agent_* fields in-place.
-        Falls back to rule-based scoring when OpenAI is unavailable.
+        Score all high-priority listings using batch parallel LLM calls.
+        Adds agent_* fields in-place. Falls back to rule-based when no LLM.
         Returns (enriched_count, skipped_count).
         """
-        enriched = 0
-        skipped  = 0
-
-        print(f"  [Stage9] Scoring {len(listings)} listings (fallback={not self._available})")
-
+        # Partition: high-priority vs skipped
+        high_priority = []
         for listing in listings:
-            if not self.is_high_priority(listing):
-                skipped += 1
-                continue
+            if self.is_high_priority(listing):
+                high_priority.append(listing)
 
-            if self._available:
-                result = self.analyze(listing)
-            else:
+        skipped = len(listings) - len(high_priority)
+        print(f"  [Stage9] Scoring {len(high_priority)} listings, skipping {skipped} (below threshold)")
+
+        if not high_priority:
+            return 0, skipped
+
+        if not self._available:
+            # Rule-based fallback — sequential, fast
+            for listing in high_priority:
                 result = _score_rule_based(listing)
+                if result:
+                    listing.update(result)
+            print(f"  [analyst] {len(high_priority)} scored via rule-based fallback")
+            return len(high_priority), skipped
 
-            if result:
-                listing.update(result)
-                enriched += 1
-                label = listing.get("address") or listing.get("full_address") or listing.get("listing_id")
-                print(f"  [analyst] Scored: {label} -> {listing.get('agent_score')}")
-            else:
-                skipped += 1
+        # Batch parallel LLM scoring
+        limiter = _RateLimiter(3.0)  # 3 req/s for LLM
+        chunks = [high_priority[i:i+BATCH_SIZE] for i in range(0, len(high_priority), BATCH_SIZE)]
+        enriched = 0
 
-            if enriched > 0 and enriched % 10 == 0:
-                print(f"  [analyst] {enriched} scored so far...")
+        print(f"  [analyst] {len(chunks)} batches × {BATCH_SIZE} listings, {MAX_BATCH_WORKERS} workers")
 
-            if self._available:
-                time.sleep(REQUEST_DELAY)
+        def _process_chunk(chunk_idx: int, chunk: List[Dict]) -> Dict[str, Dict]:
+            """Process one batch chunk with fallback to individual calls."""
+            try:
+                return _analyze_batch(self._client, self.model, chunk, limiter)
+            except Exception as exc:
+                print(f"  [analyst] Batch {chunk_idx+1} failed: {exc} — falling back to individual calls")
+                results = {}
+                for listing in chunk:
+                    try:
+                        single = self.analyze(listing)
+                        if single:
+                            results[str(listing.get("listing_id", ""))] = single
+                    except Exception as single_exc:
+                        print(f"  [analyst] Individual fallback for {listing.get('listing_id')} failed: {single_exc}")
+                return results
+
+        with ThreadPoolExecutor(max_workers=MAX_BATCH_WORKERS) as pool:
+            futures = {
+                pool.submit(_process_chunk, idx, chunk): idx
+                for idx, chunk in enumerate(chunks)
+            }
+            for future in as_completed(futures):
+                idx = futures[future]
+                try:
+                    batch_results = future.result()
+                    for listing in high_priority:
+                        lid = str(listing.get("listing_id", ""))
+                        if lid in batch_results:
+                            listing.update(batch_results[lid])
+                            enriched += 1
+                    print(f"  [analyst] Batch {idx+1}/{len(chunks)} done ({enriched} scored)")
+                except Exception as exc:
+                    print(f"  [analyst] Batch {idx+1} thread error: {exc}")
 
         return enriched, skipped

@@ -501,10 +501,10 @@ def cat5_analyst():
             actual=(enriched_cnt, skipped_cnt), expected=(0, 0))
 
     # 5.12  Required output fields present
-        required = ["agent_score", "agent_recommendation", "agent_reasoning",
-                                "agent_exit_strategy", "agent_holding_period",
-                                "agent_key_risks", "agent_due_diligence", "agent_mode",
-                                "agent_confidence"]
+    required = ["agent_score", "agent_recommendation", "agent_reasoning",
+                "agent_exit_strategy", "agent_holding_period",
+                "agent_key_risks", "agent_due_diligence", "agent_mode",
+                "agent_confidence"]
     r_full = _score_rule_based(_mk(bmv_pct=40, state="Kuala Lumpur"))
     missing = [f for f in required if f not in r_full]
     _assert(5, "5.12", "All required output fields present in rule-based result",

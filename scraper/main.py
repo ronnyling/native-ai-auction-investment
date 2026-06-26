@@ -193,18 +193,14 @@ def run():
     el_prev_state = load_elelong_state()
 
     # ── Stage 2: BidNow scrape ────────────────────────────────────────────────
-    print("\n[Stage 2] BidNow scrape (all states, delta mode)...")
+    print("\n[Stage 2] BidNow scrape (all states, parallel, delta mode)...")
     bn_scraper = BidNowScraper()
-    all_bn_listings: List[Dict] = []
-
-    for state in states_to_scrape:
-        filters = {"state": state, "listing": "active", "sort": "new"}
-        listings = bn_scraper.scrape_listings(
-            filters=filters,
-            max_pages=MAX_PAGES,
-            known_ids=known_ids,
-        )
-        all_bn_listings.extend(listings)
+    all_bn_listings: List[Dict] = bn_scraper.scrape_all_states(
+        known_ids=known_ids,
+        listing_status="active",
+        max_pages=MAX_PAGES,
+        max_workers=3,
+    )
 
     print(f"\n  BidNow total: {len(all_bn_listings)} listings fetched")
 
