@@ -2,8 +2,8 @@ name: Daily Property Scrape
 
 on:
   schedule:
-    # 00:00 UTC = 08:00 MYT (UTC+8)
-    - cron: '0 0 * * *'
+    # 21:00 UTC = 05:00 MYT (UTC+8)
+    - cron: '0 21 * * *'
   workflow_dispatch:
     inputs:
       states:
@@ -19,6 +19,10 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
 
+    concurrency:
+      group: daily-scrape
+      cancel-in-progress: false
+
     permissions:
       contents: write   # needed to push vault changes
 
@@ -28,6 +32,11 @@ jobs:
         with:
           # Fetch full history so we can push without conflicts
           fetch-depth: 0
+
+      - name: Sync branch before scraping
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.6.0
@@ -49,13 +58,14 @@ jobs:
           KNOWN_IDS_PATH: ${{ github.workspace }}/scraper/known_ids.json
           SCRAPE_STATES: ${{ github.event.inputs.states }}
           MAX_PAGES: ${{ github.event.inputs.max_pages }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python main.py
 
       - name: Commit updated vault
         run: |
           git config user.name "auction-bot"
           git config user.email "auction-bot@users.noreply.github.com"
+          git fetch origin main
+          git rebase origin/main
           git add vault/Properties/ "vault/Daily Notes/" scraper/known_ids.json scraper/geocache.json
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           CHANGED=$(git diff --staged --name-only | wc -l)
